@@ -1,0 +1,17 @@
+# Ignore Python virtual environments
+backend/env/
+
+# Ignore compiled Python files
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+
+# Ignore Django database
+backend/db.sqlite3
+
+# Ignore Node.js dependencies
+frontend/node_modules/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
