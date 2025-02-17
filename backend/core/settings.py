@@ -98,8 +98,12 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'vitaforge',         # The database name you created
+        'USER': 'vitaforge_admin',   # Or 'vitaforge_user' if using a separate user
+        'PASSWORD': 'vita2025thesis', # Replace with the actual password
+        'HOST': 'localhost',         # Or your server address if not local
+        'PORT': '5432',              # Default PostgreSQL port
     }
 }
 
@@ -146,4 +150,4 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOWS_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = True

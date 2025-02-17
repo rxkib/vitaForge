@@ -1,7 +1,8 @@
+# vitaforge/backend/api/urls.py
 from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("notes/", views.NoteListCreate.as_view(), name="note-list"),
-    path("notes/delete/<int:pk>/", views.NoteDelete.as_view(), name="delete-note"),
+    path("profile/", views.HealthProfileView.as_view(), name="profile-list-create"),
+    path("profile/detail/", views.HealthProfileDetail.as_view(), name="profile-detail"),
 ]

@@ -1,33 +1,38 @@
+// src/components/AuthForm.jsx
 import { useState } from "react";
-import api from "../api";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 import "../styles/Form.css";
-//import LoadingIndicator from "./LoadingIndicator";
 
-function Form({ route, method }) {
-  const [username, setUsername] = useState("");
+function AuthForm({ route, method }) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const name = method === "login" ? "Login" : "Register";
+  // Decide whether we are in "login" or "register" mode
+  const isLogin = method === "login";
+  const formTitle = isLogin
+    ? "Login to Fitness App"
+    : "Register for Fitness App";
 
   const handleSubmit = async (e) => {
-    setLoading(true);
     e.preventDefault();
-
+    setLoading(true);
     try {
-      const res = await api.post(route, { username, password });
-      if (method === "login") {
+      const res = await api.post(route, { username: email, password });
+      console.log("Login response:", res.data);
+      if (isLogin) {
         localStorage.setItem(ACCESS_TOKEN, res.data.access);
         localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
+        // This should redirect you to the home page upon a successful login.
         navigate("/");
       } else {
         navigate("/login");
       }
     } catch (error) {
-      alert(error);
+      alert("Login failed: " + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
@@ -35,13 +40,14 @@ function Form({ route, method }) {
 
   return (
     <form onSubmit={handleSubmit} className="form-container">
-      <h1>{name}</h1>
+      <h1>{formTitle}</h1>
       <input
         className="form-input"
-        type="text"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Username"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Email"
+        required
       />
       <input
         className="form-input"
@@ -49,13 +55,14 @@ function Form({ route, method }) {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password"
+        required
       />
-      {loading && <LoadingIndicator />}
+      {loading && <div className="loading-indicator">Processing...</div>}
       <button className="form-button" type="submit">
-        {name}
+        {isLogin ? "Login" : "Register"}
       </button>
     </form>
   );
 }
 
-export default Form;
+export default AuthForm;

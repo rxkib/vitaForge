@@ -1,36 +1,40 @@
-from django.shortcuts import render
+# vitaforge/backend/api/views.py
 from django.contrib.auth.models import User
-from rest_framework import generics
-from .serializers import UserSerializer, NoteSerializer
+from rest_framework import generics, serializers
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import Note
+from .models import HealthProfile
+from .serializers import UserSerializer, HealthProfileSerializer
 
-
-class NoteListCreate(generics.ListCreateAPIView):
-    serializer_class = NoteSerializer
+class HealthProfileView(generics.ListCreateAPIView):
+    """
+    List (if exists) or create a new HealthProfile for the authenticated user.
+    """
+    serializer_class = HealthProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
-        return Note.objects.filter(author=user)
+        return HealthProfile.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        if serializer.is_valid():
-            serializer.save(author=self.request.user)
-        else:
-            print(serializer.errors)
+        # Prevent creation if the user already has a profile.
+        if HealthProfile.objects.filter(user=self.request.user).exists():
+            raise serializers.ValidationError("Health profile already exists for this user.")
+        serializer.save(user=self.request.user)
 
-
-class NoteDelete(generics.DestroyAPIView):
-    serializer_class = NoteSerializer
+class HealthProfileDetail(generics.RetrieveUpdateAPIView):
+    """
+    Retrieve or update the HealthProfile of the authenticated user.
+    """
+    serializer_class = HealthProfileSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        user = self.request.user
-        return Note.objects.filter(author=user)
-
+    def get_object(self):
+        return HealthProfile.objects.get(user=self.request.user)
 
 class CreateUserView(generics.CreateAPIView):
+    """
+    Endpoint for user registration.
+    """
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
