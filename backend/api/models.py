@@ -7,7 +7,7 @@ class HealthProfile(models.Model):
     age = models.PositiveIntegerField()
     height = models.FloatField(help_text="Height in centimeters")
     weight = models.FloatField(help_text="Weight in kilograms")
-    fitness_goal = models.CharField(max_length=100, help_text="e.g., lose weight, gain muscle")
+   #fitness_goal = models.CharField(max_length=100, help_text="e.g., lose weight, gain muscle")
     diabetes = models.BooleanField(default=False)
     hypertension = models.BooleanField(default=False)
     heart_disease = models.BooleanField(default=False)

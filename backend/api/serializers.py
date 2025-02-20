@@ -1,14 +1,14 @@
+# vitaforge/backend/api/serializers.py
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import HealthProfile
 
 class UserSerializer(serializers.ModelSerializer):
-    # Define an email field explicitly
     email = serializers.EmailField(write_only=True)
 
     class Meta:
         model = User
-        # Remove 'username' from the input fields and use 'email' instead
+        # We'll accept "email" from the frontend and then set it as "username" in the database.
         fields = ["id", "email", "password"]
         extra_kwargs = {"password": {"write_only": True}}
 
@@ -24,7 +24,7 @@ class HealthProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = HealthProfile
         fields = [
-            "id", "age", "height", "weight", "fitness_goal", "diabetes",
+            "id", "age", "height", "weight", "diabetes",
             "hypertension", "heart_disease", "high_cholesterol", "arthritis",
             "dietary_preference", "created_at", "user"
         ]

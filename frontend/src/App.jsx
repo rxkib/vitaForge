@@ -1,7 +1,8 @@
+// src/App.jsx
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
+import MultiStepRegistration from "./pages/MultiStepRegistration"; // Updated import
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -10,12 +11,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 function Logout() {
   localStorage.clear();
   return <Navigate to="/login" />;
-}
-
-// Clears any stale tokens before showing the registration page.
-function RegisterAndLogout() {
-  localStorage.clear();
-  return <Register />;
 }
 
 function App() {
@@ -32,7 +27,8 @@ function App() {
         />
         <Route path="/login" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
-        <Route path="/register" element={<RegisterAndLogout />} />
+        {/* Replace the old register route with your multi-step registration page */}
+        <Route path="/register" element={<MultiStepRegistration />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

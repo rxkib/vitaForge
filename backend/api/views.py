@@ -16,10 +16,25 @@ class HealthProfileView(generics.ListCreateAPIView):
         return HealthProfile.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # Prevent creation if the user already has a profile.
-        if HealthProfile.objects.filter(user=self.request.user).exists():
-            raise serializers.ValidationError("Health profile already exists for this user.")
-        serializer.save(user=self.request.user)
+        conditions = self.request.data.get("health_conditions", [])
+        # If "none" is selected, override conditions: all conditions become False.
+        if "none" in conditions:
+            condition_data = {
+                "diabetes": False,
+                "hypertension": False,
+                "heart_disease": False,
+                "high_cholesterol": False,
+                "arthritis": False,
+            }
+        else:
+            condition_data = {
+                "diabetes": "diabetes" in conditions,
+                "hypertension": "hypertension" in conditions,
+                "heart_disease": "heart_disease" in conditions,
+                "high_cholesterol": "high_cholesterol" in conditions,
+                "arthritis": "arthritis" in conditions,
+            }
+        serializer.save(user=self.request.user, **condition_data)
 
 class HealthProfileDetail(generics.RetrieveUpdateAPIView):
     """
