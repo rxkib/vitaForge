@@ -1,56 +1,20 @@
+// src/components/ProtectedRoute.jsx
+import React, { useContext } from "react";
 import { Navigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
-import { useState, useEffect } from "react";
-import api from "../api";
-import { REFRESH_TOKEN, ACCESS_TOKEN } from "../constants";
+import { AuthContext } from "../context/AuthContext";
 
 function ProtectedRoute({ children }) {
-  const [isAuthorized, setIsAuthorized] = useState(null);
+  const { authState } = useContext(AuthContext);
 
-  useEffect(() => {
-    auth().catch(() => setIsAuthorized(false));
-  }, []);
-
-  const refreshToken = async () => {
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN);
-    try {
-      const res = await api.post("/api/token/refresh/", {
-        refresh: refreshToken,
-      });
-      if (res.status === 200) {
-        localStorage.setItem(ACCESS_TOKEN, res.data.access);
-        setIsAuthorized(true);
-      } else {
-        setIsAuthorized(false);
-      }
-    } catch (error) {
-      console.log(error);
-      setIsAuthorized(false);
-    }
-  };
-
-  const auth = async () => {
-    const token = localStorage.getItem(ACCESS_TOKEN);
-    if (!token) {
-      setIsAuthorized(false);
-      return;
-    }
-    const decoded = jwtDecode(token);
-    const tokenExpiration = decoded.exp;
-    const now = Date.now() / 1000;
-
-    if (tokenExpiration < now) {
-      await refreshToken();
-    } else {
-      setIsAuthorized(true);
-    }
-  };
-
-  if (isAuthorized === null) {
+  // While the app is determining if a user is authenticated (loading = true),
+  // show a loading indicator.
+  if (authState.loading) {
     return <div>Verifying your fitness profile...</div>;
   }
 
-  return isAuthorized ? children : <Navigate to="/login" />;
+  // If the user is authenticated, render the protected content (children).
+  // Otherwise, redirect to the login page.
+  return authState.isAuthenticated ? children : <Navigate to="/login" />;
 }
 
 export default ProtectedRoute;
