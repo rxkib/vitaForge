@@ -11,27 +11,20 @@ function HealthConditions({
 
   const handleCheckboxChange = (e) => {
     const { value, checked } = e.target;
-
-    // If the "none" option is toggled:
     if (value === "none") {
       if (checked) {
-        // When "none" is selected, clear all other conditions.
         setConditions(["none"]);
       } else {
-        // If "none" is unchecked, simply remove it.
         setConditions(conditions.filter((item) => item !== "none"));
       }
     } else {
-      // For any other condition:
       let updatedConditions = [];
       if (checked) {
-        // Add the condition, but also remove "none" if it was selected.
         updatedConditions = [
           ...conditions.filter((item) => item !== "none"),
           value,
         ];
       } else {
-        // Remove the condition
         updatedConditions = conditions.filter((item) => item !== value);
       }
       setConditions(updatedConditions);
@@ -45,69 +38,83 @@ function HealthConditions({
   };
 
   return (
-    <form onSubmit={onSubmit} className="form-container">
-      <h1>Select Health Conditions</h1>
-      <div>
-        <label>
+    <form onSubmit={onSubmit} className="space-y-4">
+      <h2 className="text-xl font-bold text-center">
+        Select Health Conditions
+      </h2>
+      <div className="form-control">
+        <label className="cursor-pointer label">
+          <span className="label-text">Diabetes (Type 1 & 2)</span>
           <input
             type="checkbox"
             value="diabetes"
+            className="checkbox checkbox-primary"
             onChange={handleCheckboxChange}
           />
-          Diabetes (Type 1 & 2)
         </label>
       </div>
-      <div>
-        <label>
+      <div className="form-control">
+        <label className="cursor-pointer label">
+          <span className="label-text">Hypertension</span>
           <input
             type="checkbox"
             value="hypertension"
+            className="checkbox checkbox-primary"
             onChange={handleCheckboxChange}
           />
-          Hypertension
         </label>
       </div>
-      <div>
-        <label>
+      <div className="form-control">
+        <label className="cursor-pointer label">
+          <span className="label-text">Heart Disease</span>
           <input
             type="checkbox"
             value="heart_disease"
+            className="checkbox checkbox-primary"
             onChange={handleCheckboxChange}
           />
-          Heart Disease
         </label>
       </div>
-      <div>
-        <label>
+      <div className="form-control">
+        <label className="cursor-pointer label">
+          <span className="label-text">High Cholesterol</span>
           <input
             type="checkbox"
             value="high_cholesterol"
+            className="checkbox checkbox-primary"
             onChange={handleCheckboxChange}
           />
-          High Cholesterol
         </label>
       </div>
-      <div>
-        <label>
+      <div className="form-control">
+        <label className="cursor-pointer label">
+          <span className="label-text">Arthritis</span>
           <input
             type="checkbox"
             value="arthritis"
+            className="checkbox checkbox-primary"
             onChange={handleCheckboxChange}
           />
-          Arthritis
         </label>
       </div>
-      <div>
-        <label>
-          <input type="checkbox" value="none" onChange={handleCheckboxChange} />
-          None
+      <div className="form-control">
+        <label className="cursor-pointer label">
+          <span className="label-text">None</span>
+          <input
+            type="checkbox"
+            value="none"
+            className="checkbox checkbox-secondary"
+            onChange={handleCheckboxChange}
+          />
         </label>
       </div>
-      <div>
-        <button type="button" onClick={prevStep}>
+      <div className="flex justify-between">
+        <button type="button" onClick={prevStep} className="btn btn-secondary">
           Back
         </button>
-        <button type="submit">Complete Registration</button>
+        <button type="submit" className="btn btn-primary">
+          Complete Registration
+        </button>
       </div>
     </form>
   );

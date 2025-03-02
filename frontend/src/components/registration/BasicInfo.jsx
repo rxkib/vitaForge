@@ -12,27 +12,38 @@ function BasicInfo({ formData, updateFormData, nextStep }) {
   };
 
   return (
-    <form onSubmit={handleNext} className="form-container">
-      <h1>Register for Fitness App</h1>
-      <input
-        className="form-input"
-        type="email"
-        value={localEmail}
-        onChange={(e) => setLocalEmail(e.target.value)}
-        placeholder="Email"
-        required
-      />
-      <input
-        className="form-input"
-        type="password"
-        value={localPassword}
-        onChange={(e) => setLocalPassword(e.target.value)}
-        placeholder="Password"
-        required
-      />
-      <button className="form-button" type="submit">
-        Next
-      </button>
+    <form onSubmit={handleNext} className="space-y-4">
+      <div className="form-control">
+        <label className="label">
+          <span className="label-text">Email</span>
+        </label>
+        <input
+          type="email"
+          placeholder="Enter your email"
+          className="input input-bordered w-full"
+          value={localEmail}
+          onChange={(e) => setLocalEmail(e.target.value)}
+          required
+        />
+      </div>
+      <div className="form-control">
+        <label className="label">
+          <span className="label-text">Password</span>
+        </label>
+        <input
+          type="password"
+          placeholder="Enter your password"
+          className="input input-bordered w-full"
+          value={localPassword}
+          onChange={(e) => setLocalPassword(e.target.value)}
+          required
+        />
+      </div>
+      <div className="flex justify-end">
+        <button type="submit" className="btn btn-primary">
+          Next
+        </button>
+      </div>
     </form>
   );
 }
