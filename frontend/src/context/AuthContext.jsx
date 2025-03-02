@@ -20,15 +20,27 @@ export const AuthProvider = ({ children }) => {
     const storedRefresh = localStorage.getItem(REFRESH_TOKEN);
 
     if (storedAccess && storedRefresh) {
-      const decoded = decodeToken(storedAccess); // decode the token
-      setAuthState((prev) => ({
-        ...prev,
-        isAuthenticated: true,
-        accessToken: storedAccess,
-        refreshToken: storedRefresh,
-        user: decoded, // store the decoded claims
-        loading: false,
-      }));
+      const decoded = decodeToken(storedAccess);
+
+      // If you also want to fetch user details on page reload:
+      api
+        .get("/api/user/me/")
+        .then((res) => {
+          const userDetails = res.data;
+          const combinedUser = { ...decoded, ...userDetails };
+
+          setAuthState({
+            isAuthenticated: true,
+            accessToken: storedAccess,
+            refreshToken: storedRefresh,
+            user: combinedUser,
+            loading: false,
+          });
+        })
+        .catch((err) => {
+          console.error("Fetch user info error:", err);
+          setAuthState((prev) => ({ ...prev, loading: false }));
+        });
     } else {
       setAuthState((prev) => ({ ...prev, loading: false }));
     }
@@ -46,17 +58,31 @@ export const AuthProvider = ({ children }) => {
 
   // Login function
   const login = async (username, password) => {
-    const res = await api.post("/api/token/", { username, password });
-    localStorage.setItem(ACCESS_TOKEN, res.data.access);
-    localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
+    // 1. Get tokens
+    const tokenRes = await api.post("/api/token/", { username, password });
+    localStorage.setItem(ACCESS_TOKEN, tokenRes.data.access);
+    localStorage.setItem(REFRESH_TOKEN, tokenRes.data.refresh);
 
-    const decoded = decodeToken(res.data.access);
+    // 2. Decode to get basic claims (like user_id, exp, etc.)
+    const decoded = decodeToken(tokenRes.data.access);
 
+    // 3. Fetch additional user info from /api/user/me/
+    //    This endpoint should return { email, username, ... }
+    const userDetailsRes = await api.get("/api/user/me/");
+    const userDetails = userDetailsRes.data;
+
+    // 4. Merge the decoded token data + userDetails
+    const combinedUser = {
+      ...decoded,
+      ...userDetails,
+    };
+
+    // 5. Update authState
     setAuthState({
       isAuthenticated: true,
-      accessToken: res.data.access,
-      refreshToken: res.data.refresh,
-      user: decoded, // or fetch user details from your backend if needed
+      accessToken: tokenRes.data.access,
+      refreshToken: tokenRes.data.refresh,
+      user: combinedUser,
     });
   };
 

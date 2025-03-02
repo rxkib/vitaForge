@@ -9,7 +9,7 @@ function Home() {
       <div className="navbar bg-base-100 shadow-lg">
         <div className="flex-1">
           <Link to="/" className="btn btn-ghost normal-case text-xl">
-            Fitness App Dashboard
+            vitaForge
           </Link>
         </div>
         <div className="flex-none">

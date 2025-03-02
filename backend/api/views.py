@@ -4,6 +4,20 @@ from rest_framework import generics, serializers
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import HealthProfile
 from .serializers import UserSerializer, HealthProfileSerializer
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+
+class UserMeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            "username": user.username,
+            "email": user.email,
+            # Add other fields as needed
+        })
 
 class HealthProfileView(generics.ListCreateAPIView):
     """

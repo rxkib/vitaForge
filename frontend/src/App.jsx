@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import SplashScreen from "./pages/SplashScreen";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import Profile from "./pages/Profile";
 import MultiStepRegistration from "./pages/MultiStepRegistration";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -39,6 +40,7 @@ function App() {
           <Route path="/logout" element={<Logout />} />
           <Route path="/register" element={<MultiStepRegistration />} />
           <Route path="*" element={<NotFound />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
