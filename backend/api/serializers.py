@@ -24,8 +24,18 @@ class HealthProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = HealthProfile
         fields = [
-            "id", "age", "height", "weight", "diabetes",
-            "hypertension", "heart_disease", "high_cholesterol", "arthritis",
+            "id", "age", "height", "weight", "health_conditions",
             "dietary_preference", "created_at", "user"
         ]
         extra_kwargs = {"user": {"read_only": True}}
+
+    def create(self, validated_data):
+        # Remove any legacy keys if present
+        for key in ['diabetes', 'hypertension', 'heart_disease', 'high_cholesterol', 'arthritis']:
+            validated_data.pop(key, None)
+        
+        # If health_conditions is provided as a list, join it into a string.
+        conditions = validated_data.get("health_conditions")
+        if isinstance(conditions, list):
+            validated_data["health_conditions"] = ", ".join(conditions)
+        return super().create(validated_data)

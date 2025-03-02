@@ -26,7 +26,10 @@ function MultiStepRegistration() {
   const updateFormData = (newData) =>
     setFormData((prev) => ({ ...prev, ...newData }));
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (selectedHealthConditions) => {
+    // Use the selectedHealthConditions passed from HealthConditions component.
+    const finalHealthConditions =
+      selectedHealthConditions || formData.healthConditions;
     try {
       // Register the user
       const userRes = await api.post("/api/user/register/", {
@@ -45,11 +48,14 @@ function MultiStepRegistration() {
 
       // Create the Health Profile
       await api.post("/api/health-profile/", {
-        age: formData.age,
-        height: formData.height,
-        weight: formData.weight,
+        age: Number(formData.age),
+        height: Number(formData.height),
+        weight: Number(formData.weight),
         dietary_preference: formData.dietaryPreference,
-        health_conditions: formData.healthConditions,
+        // Convert the array to a comma-separated string
+        health_conditions: Array.isArray(finalHealthConditions)
+          ? finalHealthConditions.join(", ")
+          : finalHealthConditions,
       });
 
       // Redirect to Home page

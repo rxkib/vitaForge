@@ -7,6 +7,7 @@ function HealthConditions({
   prevStep,
   handleSubmit,
 }) {
+  // Use local state for selected conditions.
   const [conditions, setConditions] = useState(formData.healthConditions || []);
 
   const handleCheckboxChange = (e) => {
@@ -20,6 +21,7 @@ function HealthConditions({
     } else {
       let updatedConditions = [];
       if (checked) {
+        // Remove "none" if another condition is selected.
         updatedConditions = [
           ...conditions.filter((item) => item !== "none"),
           value,
@@ -33,8 +35,10 @@ function HealthConditions({
 
   const onSubmit = (e) => {
     e.preventDefault();
+    // Update parent's formData (optional if we pass the conditions directly)
     updateFormData({ healthConditions: conditions });
-    handleSubmit();
+    // Pass the local conditions directly to handleSubmit so the latest value is used.
+    handleSubmit(conditions);
   };
 
   return (
@@ -50,6 +54,8 @@ function HealthConditions({
             value="diabetes"
             className="checkbox checkbox-primary"
             onChange={handleCheckboxChange}
+            // Added controlled prop
+            checked={conditions.includes("diabetes")}
           />
         </label>
       </div>
@@ -61,6 +67,7 @@ function HealthConditions({
             value="hypertension"
             className="checkbox checkbox-primary"
             onChange={handleCheckboxChange}
+            checked={conditions.includes("hypertension")}
           />
         </label>
       </div>
@@ -72,6 +79,7 @@ function HealthConditions({
             value="heart_disease"
             className="checkbox checkbox-primary"
             onChange={handleCheckboxChange}
+            checked={conditions.includes("heart_disease")}
           />
         </label>
       </div>
@@ -83,6 +91,7 @@ function HealthConditions({
             value="high_cholesterol"
             className="checkbox checkbox-primary"
             onChange={handleCheckboxChange}
+            checked={conditions.includes("high_cholesterol")}
           />
         </label>
       </div>
@@ -94,6 +103,7 @@ function HealthConditions({
             value="arthritis"
             className="checkbox checkbox-primary"
             onChange={handleCheckboxChange}
+            checked={conditions.includes("arthritis")}
           />
         </label>
       </div>
@@ -105,6 +115,7 @@ function HealthConditions({
             value="none"
             className="checkbox checkbox-secondary"
             onChange={handleCheckboxChange}
+            checked={conditions.includes("none")}
           />
         </label>
       </div>

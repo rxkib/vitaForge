@@ -1,4 +1,3 @@
-# vitaforge/backend/api/models.py
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -7,12 +6,11 @@ class HealthProfile(models.Model):
     age = models.PositiveIntegerField()
     height = models.FloatField(help_text="Height in centimeters")
     weight = models.FloatField(help_text="Weight in kilograms")
-   #fitness_goal = models.CharField(max_length=100, help_text="e.g., lose weight, gain muscle")
-    diabetes = models.BooleanField(default=False)
-    hypertension = models.BooleanField(default=False)
-    heart_disease = models.BooleanField(default=False)
-    high_cholesterol = models.BooleanField(default=False)
-    arthritis = models.BooleanField(default=False)
+    # Single field for health conditions as a comma-separated string.
+    health_conditions = models.TextField(
+        null=True, blank=True, 
+        help_text="Comma-separated list of health conditions, e.g., diabetes, hypertension"
+    )
     DIET_CHOICES = [
         ('vegan', 'Vegan'),
         ('gluten_free', 'Gluten Free'),
