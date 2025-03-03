@@ -5,8 +5,10 @@ import SplashScreen from "./pages/SplashScreen";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
 import MultiStepRegistration from "./pages/MultiStepRegistration";
 import NotFound from "./pages/NotFound";
+import Plans from "./pages/Plans";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 
@@ -39,8 +41,33 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/register" element={<MultiStepRegistration />} />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-profile"
+            element={
+              <ProtectedRoute>
+                <EditProfile />
+              </ProtectedRoute>
+            }
+          />
+          {/* Plans page */}
+          <Route
+            path="/plans"
+            element={
+              <ProtectedRoute>
+                <Plans />
+              </ProtectedRoute>
+            }
+          />
+          {/* Catch-all NotFound route - always last */}
           <Route path="*" element={<NotFound />} />
-          <Route path="/profile" element={<Profile />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

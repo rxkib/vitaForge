@@ -1,5 +1,6 @@
 // src/pages/Profile.jsx
 import React, { useEffect, useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api";
 import { AuthContext } from "../context/AuthContext";
 import defaultUser from "../assets/default_user.jpg"; // Import your default user image
@@ -8,6 +9,7 @@ function Profile() {
   const { authState } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -42,14 +44,12 @@ function Profile() {
     );
   }
 
-  // Ensure health_conditions is an array before joining
   const healthConditions = Array.isArray(profile.health_conditions)
     ? profile.health_conditions.length > 0
       ? profile.health_conditions.join(", ")
       : "None"
     : profile.health_conditions || "None";
 
-  // Use email or fallback to username from the decoded token
   const userIdentifier = authState.user
     ? authState.user.email || authState.user.username || "User"
     : "User";
@@ -98,9 +98,20 @@ function Profile() {
             <p>{healthConditions}</p>
           </div>
 
-          {/* Edit Profile Button */}
+          {/* Profile Actions */}
           <div className="card-actions justify-end mt-6">
-            <button className="btn btn-primary">Edit Profile</button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => navigate("/home")}
+            >
+              Home
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate("/edit-profile")}
+            >
+              Edit Profile
+            </button>
           </div>
         </div>
       </div>
