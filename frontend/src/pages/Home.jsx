@@ -1,8 +1,26 @@
 // src/pages/Home.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import WeightCard from "../components/WeightCard";
+import BMIChart from "../components/BMIChart";
+import api from "../api";
 
 function Home() {
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    // Fetch the user's health profile for height, etc.
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get("/api/health-profile/detail/");
+        setProfile(res.data);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+    fetchProfile();
+  }, []);
+
   return (
     <div className="min-h-screen bg-base-200">
       {/* Navbar */}
@@ -31,25 +49,31 @@ function Home() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto p-4">
-        <div className="hero min-h-screen bg-base-200">
-          <div className="hero-content text-center">
-            <div className="max-w-md">
-              <h2 className="text-5xl font-bold">Welcome Back!</h2>
-              <p className="py-6">
-                Your personalized fitness journey starts here. Check your
-                progress, explore tailored workout plans, and manage your
-                profile.
-              </p>
-              <div className="flex justify-center gap-4">
-                <Link to="/plans" className="btn btn-primary">
-                  View Plans
-                </Link>
-                <Link to="/profile" className="btn btn-secondary">
-                  View Profile
-                </Link>
-              </div>
-            </div>
+      <div className="container mx-auto p-20 text-center">
+        <h2 className="text-5xl font-bold mb-4">Welcome Back!</h2>
+        <p className="mb-6">
+          Your personalized fitness journey starts here.<br></br> Check your
+          progress, explore tailored workout plans, and manage your profile.
+        </p>
+        <div className="flex justify-center gap-4 mb-4">
+          <Link to="/plans" className="btn btn-primary">
+            View Plans
+          </Link>
+          <Link to="/profile" className="btn btn-secondary">
+            View Profile
+          </Link>
+        </div>
+
+        {/* Full-width divider */}
+        <div className="divider w-full my-8"></div>
+
+        {/* Charts: side by side on medium+ screens, stacked on small screens */}
+        <div className="flex flex-col md:flex-row gap-6 w-full">
+          <div className="flex-1">
+            <WeightCard />
+          </div>
+          <div className="flex-1">
+            {profile && <BMIChart height={profile.height} />}
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 # vitaforge/backend/api/urls.py
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import UserMeView, CreateUserView, HealthProfileView, HealthProfileDetail
+from .views import UserMeView, WeightHistoryView, CreateUserView, HealthProfileView, HealthProfileDetail
 
 urlpatterns = [
     # Registration
@@ -16,4 +16,7 @@ urlpatterns = [
     # HealthProfile endpoints
     path("health-profile/", HealthProfileView.as_view(), name="healthprofile-create-list"),
     path("health-profile/detail/", HealthProfileDetail.as_view(), name="healthprofile-detail"),
+
+    # NEW weight history endpoint
+    path("health-profile/weight/", WeightHistoryView.as_view(), name="weight_history"),
 ]
