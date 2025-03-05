@@ -2,6 +2,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import HealthProfile
+from .models import DailyLog
 
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
@@ -39,3 +40,8 @@ class HealthProfileSerializer(serializers.ModelSerializer):
         if isinstance(conditions, list):
             validated_data["health_conditions"] = ", ".join(conditions)
         return super().create(validated_data)
+
+class DailyLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyLog
+        fields = ["date", "status"]

@@ -33,3 +33,21 @@ class HealthProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Health Profile"
+    
+
+class DailyLog(models.Model):
+    STATUS_CHOICES = [
+        ('completed', 'Completed'),  # Green tick
+        ('missed', 'Missed'),        # Red cross
+        ('none', 'None')             # Default state
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='none')
+
+    class Meta:
+        unique_together = ('user', 'date')  # One log per day
+
+    def __str__(self):
+        return f"{self.user.username} - {self.date} - {self.status}"

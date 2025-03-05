@@ -110,16 +110,6 @@ function BMIChart({ height }) {
                   fillOpacity={0.25}
                   label="Obese"
                 />
-                {/* Double-line effect: thick black line with a thinner white overlay */}
-                <Line
-                  type="linear"
-                  dataKey="bmi"
-                  name="BMI"
-                  stroke="black"
-                  strokeWidth={5}
-                  dot={{ r: 2, fill: "black" }}
-                  activeDot={{ r: 4, fill: "black" }}
-                />
                 <Line
                   type="linear"
                   dataKey="bmi"
