@@ -16,10 +16,13 @@ import ScrollToTop from "./components/ScrollToTop";
 
 function Logout() {
   const { logout } = useContext(AuthContext);
+
   useEffect(() => {
     logout();
   }, [logout]);
-  return <Navigate to="/login" />;
+
+  // Force the router to replace the route and re-render
+  return <Navigate to="/login" replace={true} />;
 }
 
 function App() {

@@ -25,13 +25,20 @@ function Home() {
   return (
     <div className="min-h-screen bg-base-200">
       {/* Navbar */}
-      <div className="navbar bg-base-100 shadow-lg">
-        <div className="flex-1">
-          <Link to="/" className="btn btn-ghost normal-case text-xl">
+      <div className="navbar bg-base-100 shadow-lg fixed top-0 left-0 w-full z-50">
+        {/* Left (navbar-start) */}
+        <div className="navbar-start">
+          <Link
+            to="/"
+            className="btn btn-ghost normal-case text-xl flex items-center"
+          >
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 mr-2" />
             vitaForge
           </Link>
         </div>
-        <div className="flex-none">
+
+        {/* Right (navbar-end) */}
+        <div className="navbar-end">
           <ul className="menu menu-horizontal p-0">
             <li>
               <Link to="/plans">Plans</Link>
@@ -48,7 +55,8 @@ function Home() {
           </ul>
         </div>
       </div>
-
+      <br />
+      <br />
       {/* Main Content */}
       <div className="container mx-auto p-20 text-center">
         <h2 className="text-5xl font-bold mb-4">Welcome Back!</h2>
