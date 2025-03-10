@@ -11,6 +11,8 @@ import NotFound from "./pages/NotFound";
 import Plans from "./pages/Plans";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
+import Exercises from "./pages/Exercises";
+import ScrollToTop from "./components/ScrollToTop";
 
 function Logout() {
   const { logout } = useContext(AuthContext);
@@ -24,6 +26,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           {/* Splash screen route */}
           <Route path="/" element={<SplashScreen />} />
@@ -63,6 +66,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Plans />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/exercises"
+            element={
+              <ProtectedRoute>
+                <Exercises />
               </ProtectedRoute>
             }
           />

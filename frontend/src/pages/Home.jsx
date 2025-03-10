@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import WeightCard from "../components/WeightCard";
 import BMIChart from "../components/BMIChart";
 import api from "../api";
-import WorkoutCalendar from "../components/WorkoutCalendar"; // Note: the file is now correctly named
+import WorkoutCalendar from "../components/WorkoutCalendar";
+import exerciseImg from "../assets/exercise.png";
 
 function Home() {
   const [profile, setProfile] = useState(null);
@@ -52,8 +53,10 @@ function Home() {
       <div className="container mx-auto p-20 text-center">
         <h2 className="text-5xl font-bold mb-4">Welcome Back!</h2>
         <p className="mb-6">
-          Your personalized fitness journey starts here.<br />
-          Check your progress, explore tailored workout plans, and manage your profile.
+          Your personalized fitness journey starts here.
+          <br />
+          Check your progress, explore tailored workout plans, and manage your
+          profile.
         </p>
         <div className="flex justify-center gap-4 mb-4">
           <Link to="/plans" className="btn btn-primary">
@@ -80,10 +83,43 @@ function Home() {
         {/* Full-width divider */}
         <div className="divider w-full my-8"></div>
 
-        {/* Render the calendar, passing the account creation date */}
+        {/* Workout Calendar */}
         <div className="container mx-auto p-4">
           {profile && <WorkoutCalendar accountCreated={profile.created_at} />}
         </div>
+
+        {/* Full-width divider */}
+        <div className="divider w-full my-8"></div>
+
+        {/* Full-width Exercise Card */}
+        <Link to="/exercises">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              width: "100%",
+              height: "150px",
+              background: "linear-gradient(to right, #1A252F, #2C5364)",
+              borderRadius: "10px",
+              overflow: "hidden",
+            }}
+            className="cursor-pointer"
+          >
+            <h2
+              style={{
+                color: "white",
+                fontFamily: "'Audiowide', cursive",
+                fontStyle: "italic",
+                fontWeight: "bold",
+                fontSize: "35px",
+                textShadow: "1px 1px 4px rgba(0,0,0,0.5)",
+              }}
+            >
+              Exercises
+            </h2>
+          </div>
+        </Link>
       </div>
     </div>
   );

@@ -10,6 +10,9 @@ from rest_framework.views import APIView
 from django.utils.timezone import now
 from .models import DailyLog
 from .serializers import DailyLogSerializer
+import requests
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.views.decorators.http import require_GET
 
 
 class UserMeView(APIView):
@@ -126,6 +129,54 @@ class DailyLogRecapView(APIView):
             "bmi": round(bmi, 1) if bmi is not None else None,
         }
         return Response(data, status=status.HTTP_200_OK)
+
+
+@require_GET
+def proxy_exercises(request):
+    # Get query parameters from the request.
+    # Note: Your React code sends ?muscle=<value>
+    target = request.GET.get('muscle', '').strip()
+    name = request.GET.get('name', '').strip()
+    category = request.GET.get('category', '').strip()
+    difficulty = request.GET.get('difficulty', '').strip()
+    force = request.GET.get('force', '').strip()
+    
+    # External API endpoint (adjust if needed)
+    external_url = "http://127.0.0.1:5000/exercises"
+    
+    # Prepare parameters for external API.
+    # (Some external APIs may ignore filters; we’ll filter manually below)
+    params = {}
+    if target:
+        params['target'] = target
+    if name:
+        params['name'] = name
+    if category:
+        params['category'] = category
+    if difficulty:
+        params['difficulty'] = difficulty
+    if force:
+        params['force'] = force
+
+    try:
+        # Request from the external API.
+        response = requests.get(external_url, params=params)
+        response.raise_for_status()  # Raise an error if not 200 OK.
+        data = response.json()
+        
+        # If the external API doesn't filter correctly, filter the results manually.
+        if target:
+            filtered_data = [
+                ex for ex in data 
+                if ex.get('target') 
+                and ex['target'].get('Primary') 
+                and target in ex['target']['Primary']
+            ]
+            data = filtered_data
+        
+        return JsonResponse(data, safe=False)
+    except requests.RequestException as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 

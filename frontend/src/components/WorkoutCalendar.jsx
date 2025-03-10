@@ -241,11 +241,11 @@ function WorkoutCalendar({ accountCreated }) {
               }}
             >
               {/* Day number in bottom-left */}
-              <span className="absolute bottom-1 left-1 text-xs">{day}</span>
+              <span className="absolute bottom-1 left-1 text-base">{day}</span>
               {/* Status icon in top-right */}
               {(status === "completed" || status === "missed") && (
                 <span className="absolute top-1 right-1 text-sm">
-                  {status === "completed" ? "✅" : "🚫"}
+                  {status === "completed" ? "✔️" : "❌"}
                 </span>
               )}
             </div>
