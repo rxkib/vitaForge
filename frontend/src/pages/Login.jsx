@@ -26,7 +26,7 @@ function Login() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-base-200">
-      <div className="card w-96 bg-base-100 shadow-xl">
+      <div className="card w-96 bg-base-100 shadow-xl animate__animated animate__fadeIn">
         <div className="card-body">
           <h1 className="card-title justify-center">Login</h1>
           <form onSubmit={handleLogin}>
@@ -56,9 +56,17 @@ function Login() {
                 required
               />
             </div>
-            {loading && <div className="text-center mt-4">Loading...</div>}
+            {loading && (
+              <div className="flex justify-center mt-4">
+                <span className="loading loading-bars loading-md"></span>
+              </div>
+            )}
             <div className="form-control mt-6">
-              <button className="btn btn-primary" type="submit">
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={loading}
+              >
                 Login
               </button>
             </div>

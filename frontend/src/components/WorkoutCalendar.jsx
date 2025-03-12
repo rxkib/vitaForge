@@ -16,6 +16,7 @@ function WorkoutCalendar({ accountCreated }) {
   const [selectedDate, setSelectedDate] = useState(null); // For today's logging modal.
   const [recapDate, setRecapDate] = useState(null); // For past day recap.
   const [recapData, setRecapData] = useState(null); // Recap details.
+  const [recapLoaded, setRecapLoaded] = useState(false); // Whether recap fetch is complete.
   const [displayYear, setDisplayYear] = useState(new Date().getFullYear());
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth()); // 0-indexed
 
@@ -77,6 +78,8 @@ function WorkoutCalendar({ accountCreated }) {
     } catch (error) {
       console.error("Error fetching daily recap:", error);
       setRecapData(null);
+    } finally {
+      setRecapLoaded(true);
     }
   };
 
@@ -106,6 +109,7 @@ function WorkoutCalendar({ accountCreated }) {
     setSelectedDate(null);
     setRecapDate(null);
     setRecapData(null);
+    setRecapLoaded(false);
   };
 
   // Month navigation handlers.
@@ -210,7 +214,7 @@ function WorkoutCalendar({ accountCreated }) {
         </div>
       </div>
 
-      {/* Calendar Grid with auto-filled squares */}
+      {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-1 auto-rows-fr h-96">
         {calendarCells.map((cell) => {
           const { iso, day, status, isCurrentDisplayed, isToday, isPast } =
@@ -232,6 +236,7 @@ function WorkoutCalendar({ accountCreated }) {
                   setSelectedDate(null);
                   setRecapDate(iso);
                   setRecapData(null);
+                  setRecapLoaded(false);
                   await fetchDailyRecap(iso);
                 } else if (isToday) {
                   // Today: open logging modal.
@@ -256,12 +261,9 @@ function WorkoutCalendar({ accountCreated }) {
       {/* Modal for Today's Logging */}
       {selectedDate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-          {/* Clickable backdrop to close */}
+          {/* Clickable backdrop */}
           <div className="absolute inset-0" onClick={handleCancel} />
-
-          {/* Gradient "frame" around the card */}
           <div className="relative p-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-lg shadow-xl max-w-sm w-full transform transition-all">
-            {/* Inner card */}
             <div className="bg-base-100 p-6 rounded-lg">
               <h3 className="text-2xl font-bold mb-4">
                 Log Entry for {selectedDate}
@@ -270,20 +272,15 @@ function WorkoutCalendar({ accountCreated }) {
                 Did you work out and eat well on this day?
               </p>
               <div className="flex gap-3 justify-center">
-                {/* Completed -> success */}
                 <button
                   className="btn btn-soft btn-success"
                   onClick={handleYes}
                 >
                   Mark Completed
                 </button>
-
-                {/* Missed -> error */}
                 <button className="btn btn-soft btn-error" onClick={handleNo}>
                   Mark Missed
                 </button>
-
-                {/* Cancel -> default (no status) */}
                 <button className="btn btn-soft" onClick={handleCancel}>
                   Cancel
                 </button>
@@ -296,19 +293,17 @@ function WorkoutCalendar({ accountCreated }) {
       {/* Recap Modal for Past Days */}
       {recapDate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-          {/* Clickable backdrop to close */}
+          {/* Clickable backdrop */}
           <div className="absolute inset-0" onClick={handleCancel} />
-
-          {/* Gradient frame around the card */}
           <div className="relative max-w-md w-full p-1 rounded-xl shadow-lg z-10 bg-gradient-to-r from-cyan-400 to-blue-500">
-            {/* Inner container: black background, white text */}
             <div className="bg-black rounded-xl p-6">
               <h3 className="text-2xl font-bold text-white mb-4">
                 Recap for {recapDate}
               </h3>
-
-              {!recapData ? (
+              {!recapLoaded ? (
                 <p className="text-gray-300">Loading recap...</p>
+              ) : !recapData ? (
+                <p className="text-gray-300">No data was recorded this day.</p>
               ) : (
                 <>
                   <p className="mb-2 text-white">
@@ -322,7 +317,6 @@ function WorkoutCalendar({ accountCreated }) {
                   </p>
                 </>
               )}
-
               <div className="mt-6 flex justify-end">
                 <button
                   className="btn btn-soft text-white"

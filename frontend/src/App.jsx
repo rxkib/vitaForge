@@ -13,6 +13,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 import Exercises from "./pages/Exercises";
 import ScrollToTop from "./components/ScrollToTop";
+import "animate.css";
 
 function Logout() {
   const { logout } = useContext(AuthContext);
