@@ -52,7 +52,10 @@ function Exercises() {
   // State for selected exercise (to show details in modal)
   const [selectedExercise, setSelectedExercise] = useState(null);
 
-  // Query for filtered exercises (based on current filter selections)
+  // For truncating description text
+  const [showFullDetails, setShowFullDetails] = useState(false);
+
+  // Query for filtered exercises
   const {
     data: exercises,
     isLoading,
@@ -65,7 +68,7 @@ function Exercises() {
     refetchOnWindowFocus: false,
   });
 
-  // Query for global search suggestions (ignores filters)
+  // Query for global search suggestions
   const {
     data: searchSuggestions,
     isLoading: searchLoading,
@@ -89,12 +92,23 @@ function Exercises() {
 
   const handleSelectExercise = (exercise) => {
     setSelectedExercise(exercise);
-    // Optionally clear search query to hide suggestions.
-    setSearchQuery("");
+    setShowFullDetails(false); // reset "See more" state
+    setSearchQuery(""); // optionally clear search
   };
 
   const closeModal = () => {
     setSelectedExercise(null);
+    setShowFullDetails(false);
+  };
+
+  // Helper to get truncated text (150 words max)
+  const getTruncatedText = (text) => {
+    if (!text) return "No details available";
+    const words = text.trim().split(/\s+/);
+    if (words.length <= 150) {
+      return text; // no need to truncate
+    }
+    return words.slice(0, 150).join(" ") + "...";
   };
 
   return (
@@ -153,7 +167,6 @@ function Exercises() {
               className="btn btn-neutral"
               onClick={() => navigate("/home")}
               style={{
-                fontFamily: "'Audiowide', cursive",
                 textShadow: "0 0 3px rgba(0,0,0,0.4)",
               }}
             >
@@ -180,7 +193,7 @@ function Exercises() {
                   {searchSuggestions.map((exercise, index) => (
                     <li
                       key={exercise.id || index}
-                      className="p-2 hover:bg-gray-200 transition-colors cursor-pointer"
+                      className="p-2 text-gray-200 hover:bg-gray-600 hover:text-white transition-colors cursor-pointer"
                       onClick={() => handleSelectExercise(exercise)}
                     >
                       {exercise.exercise_name}
@@ -201,16 +214,10 @@ function Exercises() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div className="form-control">
               <label className="label">
-                <span
-                  className="label-text font-bold"
-                  style={{ fontFamily: "'Audiowide', cursive" }}
-                >
-                  Muscle
-                </span>
+                <span className="label-text font-bold">Muscle</span>
               </label>
               <select
                 className="select select-bordered"
-                style={{ fontFamily: "'Audiowide', cursive" }}
                 value={muscle}
                 onChange={(e) => setMuscle(e.target.value)}
               >
@@ -233,16 +240,10 @@ function Exercises() {
             </div>
             <div className="form-control">
               <label className="label">
-                <span
-                  className="label-text font-bold"
-                  style={{ fontFamily: "'Audiowide', cursive" }}
-                >
-                  Category
-                </span>
+                <span className="label-text font-bold">Category</span>
               </label>
               <select
                 className="select select-bordered"
-                style={{ fontFamily: "'Audiowide', cursive" }}
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
@@ -262,16 +263,10 @@ function Exercises() {
             </div>
             <div className="form-control">
               <label className="label">
-                <span
-                  className="label-text font-bold"
-                  style={{ fontFamily: "'Audiowide', cursive" }}
-                >
-                  Difficulty
-                </span>
+                <span className="label-text font-bold">Difficulty</span>
               </label>
               <select
                 className="select select-bordered"
-                style={{ fontFamily: "'Audiowide', cursive" }}
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
               >
@@ -282,16 +277,10 @@ function Exercises() {
             </div>
             <div className="form-control">
               <label className="label">
-                <span
-                  className="label-text font-bold"
-                  style={{ fontFamily: "'Audiowide', cursive" }}
-                >
-                  Force
-                </span>
+                <span className="label-text font-bold">Force</span>
               </label>
               <select
                 className="select select-bordered"
-                style={{ fontFamily: "'Audiowide', cursive" }}
                 value={force}
                 onChange={(e) => setForce(e.target.value)}
               >
@@ -314,11 +303,11 @@ function Exercises() {
               {exercises.map((exercise, index) => (
                 <div
                   key={exercise.id || exercise.exercise_name || index}
-                  className="max-w-3xl mx-auto p-6 bg-base-200 rounded-lg border border-gray-300 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                  className="w-full p-6 bg-base-200 rounded-lg border border-gray-300 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
                 >
-                  <div className="flex flex-col md:flex-row gap-6">
-                    {/* Video Preview */}
-                    <div className="flex-shrink-0 w-full md:w-60">
+                  <div className="flex flex-col md:flex-row">
+                    {/* Left Column: Video Preview with Border */}
+                    <div className="w-full md:w-1/3 pr-4 md:border-r md:border-gray-300">
                       {exercise.videoURL && exercise.videoURL.length > 0 ? (
                         <div className="relative w-full aspect-video bg-gray-300 rounded overflow-hidden flex items-center justify-center">
                           <video
@@ -364,18 +353,9 @@ function Exercises() {
                       )}
                     </div>
 
-                    {/* Divider for md+ screens */}
-                    <div className="hidden md:block w-px bg-gray-300"></div>
-
-                    {/* Exercise Summary */}
-                    <div className="flex-grow text-center md:text-left">
-                      <h3
-                        className="font-semibold text-xl mb-2"
-                        style={{
-                          fontFamily: "'Audiowide', cursive",
-                          textShadow: "0 0 3px rgba(0,0,0,0.3)",
-                        }}
-                      >
+                    {/* Right Column: Exercise Summary */}
+                    <div className="w-full md:w-2/3 pl-4 text-center md:text-left">
+                      <h3 className="font-semibold text-xl mb-2">
                         {exercise.exercise_name || "Unnamed Exercise"}
                       </h3>
                       <p className="text-sm mb-1">
@@ -401,13 +381,7 @@ function Exercises() {
                       </p>
                       <button
                         onClick={() => handleSelectExercise(exercise)}
-                        className="btn btn-primary btn-sm transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                        style={{
-                          fontFamily: "'Audiowide', cursive",
-                          background:
-                            "linear-gradient(45deg, #1A252F, #2C5364)",
-                          boxShadow: "0 0 8px rgba(44,83,100,0.8)",
-                        }}
+                        className="btn btn-primary btn-m transition-all duration-300 hover:scale-105"
                       >
                         View Details
                       </button>
@@ -420,79 +394,125 @@ function Exercises() {
         </div>
       </div>
 
+      {/* MODAL */}
       {selectedExercise && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
           {/* Clickable backdrop */}
           <div className="absolute inset-0" onClick={closeModal}></div>
-          <div className="relative max-w-3xl w-full mx-4 rounded-xl shadow-2xl z-10 max-h-[80vh] overflow-y-auto">
-            {/* Modal Header with Enhanced Gradient */}
-            <div className="p-6 rounded-t-xl bg-gradient-to-r from-blue-900 to-cyan-600">
-              <h3
-                className="text-3xl font-bold text-white"
-                style={{ fontFamily: "'Audiowide', cursive" }}
+          <div className="relative max-w-3xl w-full mx-4 rounded-xl shadow-2xl z-10 max-h-[80vh]">
+            {/* Always visible Close (X) Button positioned outside scrollable content */}
+            <button
+              onClick={closeModal}
+              className="absolute top-4 right-4 z-30 text-white transition-colors"
+              style={{ fontSize: "1.5rem" }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="3"
+                stroke="currentColor"
+                className="w-10 h-10"
               >
-                {selectedExercise.exercise_name || "Unnamed Exercise"}
-              </h3>
-            </div>
-            {/* Modal Content */}
-            <div className="p-6 bg-base-100">
-              <p className="text-sm mb-2">
-                <strong>Category:</strong> {selectedExercise.Category ?? "N/A"}
-              </p>
-              <p className="text-sm mb-2">
-                <strong>Difficulty:</strong>{" "}
-                {selectedExercise.Difficulty ?? "N/A"}
-              </p>
-              <p className="text-sm mb-2">
-                <strong>Force:</strong> {selectedExercise.Force ?? "N/A"}
-              </p>
-              {selectedExercise.Grips && (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            {/* Scrollable Modal Content */}
+            <div className="overflow-y-auto max-h-[80vh]">
+              {/* Modal Header with Enhanced Gradient */}
+              <div
+                className="p-6 rounded-t-xl bg-gradient-to-r from-blue-900 to-cyan-600"
+                style={{ fontFamily: "inherit" }}
+              >
+                <h3
+                  className="text-3xl font-bold text-white"
+                  style={{ fontFamily: "inherit" }}
+                >
+                  {selectedExercise.exercise_name || "Unnamed Exercise"}
+                </h3>
+              </div>
+              {/* Modal Body */}
+              <div
+                className="p-6 bg-base-100"
+                style={{ fontFamily: "inherit" }}
+              >
                 <p className="text-sm mb-2">
-                  <strong>Grips:</strong> {selectedExercise.Grips}
+                  <strong>Category:</strong>{" "}
+                  {selectedExercise.Category ?? "N/A"}
                 </p>
-              )}
-              <p className="text-sm mb-2">
-                <strong>Target:</strong>{" "}
-                {selectedExercise.target && selectedExercise.target.Primary
-                  ? selectedExercise.target.Primary.join(", ")
-                  : "N/A"}
-              </p>
-              <p className="text-sm mb-4">
-                <strong>Details:</strong>{" "}
-                {selectedExercise.details ?? "No details available"}
-              </p>
-              {selectedExercise.steps && selectedExercise.steps.length > 0 && (
-                <div className="mb-4 text-sm">
-                  <strong>Steps:</strong>
-                  <ul className="list-disc list-inside">
-                    {selectedExercise.steps.map((step, idx) => (
-                      <li key={idx}>{step}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {selectedExercise.videoURL &&
-                selectedExercise.videoURL.length > 0 && (
-                  <video
-                    src={selectedExercise.videoURL[0]}
-                    controls
-                    preload="auto"
-                    className="mt-4 w-full rounded"
-                  />
+                <p className="text-sm mb-2">
+                  <strong>Difficulty:</strong>{" "}
+                  {selectedExercise.Difficulty ?? "N/A"}
+                </p>
+                <p className="text-sm mb-2">
+                  <strong>Force:</strong> {selectedExercise.Force ?? "N/A"}
+                </p>
+                {selectedExercise.Grips && (
+                  <p className="text-sm mb-2">
+                    <strong>Grips:</strong> {selectedExercise.Grips}
+                  </p>
                 )}
-            </div>
-            {/* Modal Footer */}
-            <div className="p-4 bg-base-100 flex justify-end">
-              <button
-                className="btn btn-outline transition-all duration-300 hover:scale-105"
-                style={{
-                  fontFamily: "'Audiowide', cursive",
-                  boxShadow: "0 0 6px rgba(44,83,100,0.6)",
-                }}
-                onClick={closeModal}
-              >
-                Close
-              </button>
+                <p className="text-sm mb-2">
+                  <strong>Target:</strong>{" "}
+                  {selectedExercise.target && selectedExercise.target.Primary
+                    ? selectedExercise.target.Primary.join(", ")
+                    : "N/A"}
+                </p>
+
+                {/* Details with "See more" if >150 words */}
+                {(() => {
+                  const details = selectedExercise.details || "";
+                  const words = details.trim().split(/\s+/);
+                  const hasMore = words.length > 80;
+                  const displayedText = showFullDetails
+                    ? details
+                    : hasMore
+                    ? words.slice(0, 80).join(" ") + "..."
+                    : details;
+
+                  return (
+                    <div className="mb-4 text-sm">
+                      <strong>Details:</strong> {displayedText}
+                      {hasMore && !showFullDetails && (
+                        <button
+                          onClick={() => setShowFullDetails(true)}
+                          className="ml-2 text-blue-500 underline"
+                        >
+                          See more
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Steps */}
+                {selectedExercise.steps &&
+                  selectedExercise.steps.length > 0 && (
+                    <div className="mb-4 text-sm">
+                      <strong>Steps:</strong>
+                      <ul className="list-disc list-inside">
+                        {selectedExercise.steps.map((step, idx) => (
+                          <li key={idx}>{step}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                {/* Video */}
+                {selectedExercise.videoURL &&
+                  selectedExercise.videoURL.length > 0 && (
+                    <video
+                      src={selectedExercise.videoURL[0]}
+                      controls
+                      preload="auto"
+                      className="mt-4 w-full rounded"
+                    />
+                  )}
+              </div>
             </div>
           </div>
         </div>
