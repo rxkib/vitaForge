@@ -10,10 +10,11 @@ import MultiStepRegistration from "./pages/MultiStepRegistration";
 import NotFound from "./pages/NotFound";
 import Plans from "./pages/Plans";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { AuthProvider, AuthContext } from "./context/AuthContext";
 import Exercises from "./pages/Exercises";
 import ScrollToTop from "./components/ScrollToTop";
 import "animate.css";
+import Recommendations from "./pages/Recommendations";
+import { AuthProvider, AuthContext } from "./context/AuthContext";
 
 function Logout() {
   const { logout } = useContext(AuthContext);
@@ -22,7 +23,6 @@ function Logout() {
     logout();
   }, [logout]);
 
-  // Force the router to replace the route and re-render
   return <Navigate to="/login" replace={true} />;
 }
 
@@ -32,10 +32,7 @@ function App() {
       <BrowserRouter>
         <ScrollToTop />
         <Routes>
-          {/* Splash screen route */}
           <Route path="/" element={<SplashScreen />} />
-
-          {/* Home route is now at /home */}
           <Route
             path="/home"
             element={
@@ -44,7 +41,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route path="/login" element={<Login />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/register" element={<MultiStepRegistration />} />
@@ -64,7 +60,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Plans page */}
           <Route
             path="/plans"
             element={
@@ -81,7 +76,14 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Catch-all NotFound route - always last */}
+          <Route
+            path="/recommendations"
+            element={
+              <ProtectedRoute>
+                <Recommendations />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

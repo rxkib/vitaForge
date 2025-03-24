@@ -1,76 +1,71 @@
-# vitaforge/backend/api/views.py
+# backend/api/views.py
 from rest_framework import status
 from django.contrib.auth.models import User
 from rest_framework import generics, serializers
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import HealthProfile
-from .serializers import UserSerializer, HealthProfileSerializer
+from .models import HealthProfile, DailyLog, FoodItem
+from .serializers import UserSerializer, HealthProfileSerializer, DailyLogSerializer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.timezone import now
-from .models import DailyLog
-from .serializers import DailyLogSerializer
-import requests
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_GET
+from django.shortcuts import get_object_or_404
+import requests
+
+from .constraints import (
+    compute_calorie_target,
+    get_diabetic_limits,
+    DiabetesConstraints,
+    get_hypertension_limits, 
+    HypertensionConstraints,
+    get_heart_disease_limits,
+    HeartDiseaseConstraints,
+    get_high_cholesterol_limits,
+    HighCholesterolConstraints,
+    get_arthritis_limits,
+    ArthritisConstraints,
+    CompositeConstraints
+)
 
 
 class UserMeView(APIView):
     permission_classes = [IsAuthenticated]
-
     def get(self, request):
         user = request.user
         return Response({
             "username": user.username,
             "email": user.email,
-            # Add other fields as needed
         })
-    
+
 
 class WeightHistoryView(APIView):
     permission_classes = [IsAuthenticated]
-
     def get(self, request):
-        """
-        Returns the last 7 entries (or all, based on your preference) of the user's weight history.
-        """
         profile = HealthProfile.objects.get(user=request.user)
-        # Return entire history, or slice the last 7
         data = profile.weight_history[-7:]
         return Response(data)
-
     def post(self, request):
-        """
-        Adds a new weight entry (weight + date) to the user's profile history.
-        """
         profile = HealthProfile.objects.get(user=request.user)
         new_weight = request.data.get("weight")
         if new_weight is None:
             return Response({"error": "Weight is required"}, status=400)
-
         entry = {
             "date": now().strftime("%Y-%m-%d"),
             "weight": float(new_weight),
         }
-        updated_history = profile.weight_history
-        updated_history.append(entry)
-        profile.weight_history = updated_history
-
-        # Update the dedicated weight field so BMI can be computed easily
+        profile.weight_history.append(entry)
         profile.weight = float(new_weight)
         profile.save()
-
         return Response(profile.weight_history[-7:])
 
 
 class DailyLogView(APIView):
     permission_classes = [IsAuthenticated]
-
     def get(self, request):
         logs = DailyLog.objects.filter(user=request.user)
         serializer = DailyLogSerializer(logs, many=True)
         return Response(serializer.data)
-
     def post(self, request):
         date = request.data.get("date")
         status_val = request.data.get("status")
@@ -89,39 +84,17 @@ class DailyLogView(APIView):
 
 class DailyLogRecapView(APIView):
     permission_classes = [IsAuthenticated]
-
     def get(self, request, date_str):
-        """
-        Retrieve the daily log recap for a specific date (YYYY-MM-DD).
-        Returns:
-          - status from DailyLog,
-          - weight from HealthProfile.weight_history (if available),
-          - computed BMI using the user's height.
-        """
-        # Retrieve the daily log for the given date
         try:
             log = DailyLog.objects.get(user=request.user, date=date_str)
         except DailyLog.DoesNotExist:
             return Response({"error": "No log found for that date."}, status=status.HTTP_404_NOT_FOUND)
-        
-        # Retrieve the user's HealthProfile for weight and height data
         try:
             profile = HealthProfile.objects.get(user=request.user)
         except HealthProfile.DoesNotExist:
             return Response({"error": "No health profile found for the user."}, status=status.HTTP_404_NOT_FOUND)
-        
-        # Attempt to find the weight entry for the specified date
-        weight = None
-        for entry in profile.weight_history:
-            if entry.get("date") == date_str:
-                weight = entry.get("weight")
-                break
-
-        # Compute BMI if weight exists and height is valid
-        bmi = None
-        if weight is not None and profile.height:
-            bmi = weight / ((profile.height / 100) ** 2)
-        
+        weight = next((entry.get("weight") for entry in profile.weight_history if entry.get("date") == date_str), None)
+        bmi = weight / ((profile.height / 100) ** 2) if weight is not None and profile.height else None
         data = {
             "date": date_str,
             "status": log.status,
@@ -133,19 +106,12 @@ class DailyLogRecapView(APIView):
 
 @require_GET
 def proxy_exercises(request):
-    # Get query parameters from the request.
-    # Note: Your React code sends ?muscle=<value>
     target = request.GET.get('muscle', '').strip()
     name = request.GET.get('name', '').strip()
     category = request.GET.get('category', '').strip()
     difficulty = request.GET.get('difficulty', '').strip()
     force = request.GET.get('force', '').strip()
-    
-    # External API endpoint (adjust if needed)
     external_url = "http://127.0.0.1:5000/exercises"
-    
-    # Prepare parameters for external API.
-    # (Some external APIs may ignore filters; we’ll filter manually below)
     params = {}
     if target:
         params['target'] = target
@@ -157,50 +123,26 @@ def proxy_exercises(request):
         params['difficulty'] = difficulty
     if force:
         params['force'] = force
-
     try:
-        # Request from the external API.
         response = requests.get(external_url, params=params)
-        response.raise_for_status()  # Raise an error if not 200 OK.
+        response.raise_for_status()
         data = response.json()
-        
-        # If the external API doesn't filter correctly, filter the results manually.
         if target:
-            filtered_data = [
-                ex for ex in data 
-                if ex.get('target') 
-                and ex['target'].get('Primary') 
-                and target in ex['target']['Primary']
-            ]
-            data = filtered_data
-        
+            data = [ex for ex in data if ex.get('target') and ex['target'].get('Primary') and target in ex['target']['Primary']]
         return JsonResponse(data, safe=False)
     except requests.RequestException as e:
         return JsonResponse({'error': str(e)}, status=500)
 
 
-
 class HealthProfileView(generics.ListCreateAPIView):
-    """
-    List (if exists) or create a new HealthProfile for the authenticated user.
-    """
     serializer_class = HealthProfileSerializer
     permission_classes = [IsAuthenticated]
-
     def get_queryset(self):
         return HealthProfile.objects.filter(user=self.request.user)
-
     def perform_create(self, serializer):
         conditions = self.request.data.get("health_conditions", [])
-        # If "none" is selected, override conditions: all conditions become False.
         if "none" in conditions:
-            condition_data = {
-                "diabetes": False,
-                "hypertension": False,
-                "heart_disease": False,
-                "high_cholesterol": False,
-                "arthritis": False,
-            }
+            condition_data = {"diabetes": False, "hypertension": False, "heart_disease": False, "high_cholesterol": False, "arthritis": False}
         else:
             condition_data = {
                 "diabetes": "diabetes" in conditions,
@@ -209,37 +151,96 @@ class HealthProfileView(generics.ListCreateAPIView):
                 "high_cholesterol": "high_cholesterol" in conditions,
                 "arthritis": "arthritis" in conditions,
             }
-
-        # 1) Create the HealthProfile
         profile = serializer.save(user=self.request.user, **condition_data)
-
-        # 2) Append initial weight to weight_history if it's not empty already.
-        #    Make sure profile.weight is actually set by your serializer.
-        if not profile.weight_history:  # or if len(profile.weight_history) == 0
+        if not profile.weight_history:
             profile.weight_history = []
-
-        # Add the initial entry (date + weight)
         profile.weight_history.append({
             "date": now().strftime("%Y-%m-%d"),
             "weight": float(profile.weight),
         })
-        profile.save()  # re-save to persist the updated history
+        profile.save()
 
 
 class HealthProfileDetail(generics.RetrieveUpdateAPIView):
-    """
-    Retrieve or update the HealthProfile of the authenticated user.
-    """
     serializer_class = HealthProfileSerializer
     permission_classes = [IsAuthenticated]
-
     def get_object(self):
         return HealthProfile.objects.get(user=self.request.user)
 
+
 class CreateUserView(generics.CreateAPIView):
-    """
-    Endpoint for user registration.
-    """
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
+
+
+class RecommendationView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        goal = request.GET.get("goal", "maintain")
+        selected_region = request.GET.get("region", None)
+        # Allow override via query parameter "condition"
+        if request.GET.get("condition"):
+            conditions = [request.GET.get("condition").strip().lower()]
+        elif HealthProfile.objects.filter(user=request.user).exists():
+            profile = HealthProfile.objects.filter(user=request.user).first()
+            conditions = [cond.strip().lower() for cond in profile.health_conditions.split(",")] if profile.health_conditions else []
+        else:
+            conditions = []
+
+        profile = get_object_or_404(HealthProfile, user=request.user)
+        age = profile.age
+        height_cm = profile.height
+        weight_kg = profile.weight
+
+        daily_kcal = compute_calorie_target(age, height_cm, weight_kg, goal)
+        diabetic_limits = get_diabetic_limits(daily_kcal)
+        hypertension_limits = get_hypertension_limits(daily_kcal)
+        heart_disease_limits = get_heart_disease_limits(daily_kcal)
+        arthritis_limits = get_arthritis_limits(daily_kcal)
+
+        constraints_list = []
+        if "diabetes" in conditions:
+            constraints_list.append(DiabetesConstraints(diabetic_limits, meals_per_day=3))
+        if "hypertension" in conditions:
+            constraints_list.append(HypertensionConstraints(hypertension_limits, meals_per_day=3))
+        if "heart_disease" in conditions:
+            constraints_list.append(HeartDiseaseConstraints(heart_disease_limits, meals_per_day=3))
+        if "arthritis" in conditions:
+            constraints_list.append(ArthritisConstraints(arthritis_limits, meals_per_day=3))
+        if not constraints_list:
+            class NoConstraints:
+                def food_score(self, food):
+                    return 0
+            constraints_list.append(NoConstraints())
+
+        composite = CompositeConstraints(constraints_list)
+
+        if selected_region:
+            all_foods = FoodItem.objects.filter(region__in=[selected_region, "Both"])
+        else:
+            all_foods = FoodItem.objects.all()
+
+        scored_list = [(food, composite.food_score(food)) for food in all_foods]
+        scored_list.sort(key=lambda x: x[1], reverse=True)
+
+        grouped_results = {}
+        for food, score in scored_list:
+            category = food.tags.split(",")[0].strip() if food.tags else "Uncategorized"
+            food_data = {
+                "food_id": food.id,
+                "name": food.name,
+                "score": round(score, 2),
+                "carbs": food.carbs_g if food.carbs_g is not None else (food.total_available_cho_g or "N/A"),
+                "free_sugars": food.total_free_sugars_g if food.total_free_sugars_g is not None else "N/A",
+                "fiber": food.dietary_fibre_g if food.dietary_fibre_g is not None else "N/A",
+                "saturated_fat_g": (food.total_saturated_fatty_acids_mg / 1000.0) if food.total_saturated_fatty_acids_mg is not None else "N/A",
+                "cholesterol_mg": food.cholesterol_mg if food.cholesterol_mg is not None else "N/A",
+                "sodium_mg": food.sodium_mg if food.sodium_mg is not None else "N/A",
+                "potassium_mg": food.potassium_mg if food.potassium_mg is not None else "N/A",
+                "linoleic_mg": food.linoleic_mg if food.linoleic_mg is not None else "N/A",
+                "total_fat_g": food.total_fat_g if food.total_fat_g is not None else "N/A",
+            }
+            grouped_results.setdefault(category, []).append(food_data)
+
+        return Response({"recommended_foods": grouped_results})
