@@ -21,10 +21,12 @@ from .constraints import (
     HypertensionConstraints,
     get_heart_disease_limits,
     HeartDiseaseConstraints,
-    get_high_cholesterol_limits,
-    HighCholesterolConstraints,
     get_arthritis_limits,
     ArthritisConstraints,
+    get_high_cholesterol_limits,
+    HighCholesterolConstraints,
+    get_general_limits,
+    GeneralConstraints,
     CompositeConstraints
 )
 
@@ -198,6 +200,8 @@ class RecommendationView(APIView):
         hypertension_limits = get_hypertension_limits(daily_kcal)
         heart_disease_limits = get_heart_disease_limits(daily_kcal)
         arthritis_limits = get_arthritis_limits(daily_kcal)
+        high_cholesterol_limits = get_high_cholesterol_limits(daily_kcal)
+        general_limits = get_general_limits(daily_kcal)
 
         constraints_list = []
         if "diabetes" in conditions:
@@ -208,6 +212,11 @@ class RecommendationView(APIView):
             constraints_list.append(HeartDiseaseConstraints(heart_disease_limits, meals_per_day=3))
         if "arthritis" in conditions:
             constraints_list.append(ArthritisConstraints(arthritis_limits, meals_per_day=3))
+        if "high_cholesterol" in conditions:
+            constraints_list.append(HighCholesterolConstraints(high_cholesterol_limits, meals_per_day=3))
+        # If the user selects "none" or no condition is provided, use general constraints.
+        if "none" in conditions or not conditions:
+            constraints_list.append(GeneralConstraints(general_limits, meals_per_day=3))
         if not constraints_list:
             class NoConstraints:
                 def food_score(self, food):
@@ -231,15 +240,42 @@ class RecommendationView(APIView):
                 "food_id": food.id,
                 "name": food.name,
                 "score": round(score, 2),
+                "protein_g": food.protein_g if food.protein_g is not None else "N/A",
+                "total_fat_g": food.total_fat_g if food.total_fat_g is not None else "N/A",
                 "carbs": food.carbs_g if food.carbs_g is not None else (food.total_available_cho_g or "N/A"),
-                "free_sugars": food.total_free_sugars_g if food.total_free_sugars_g is not None else "N/A",
-                "fiber": food.dietary_fibre_g if food.dietary_fibre_g is not None else "N/A",
-                "saturated_fat_g": (food.total_saturated_fatty_acids_mg / 1000.0) if food.total_saturated_fatty_acids_mg is not None else "N/A",
+                "total_free_sugars_g": food.total_free_sugars_g if food.total_free_sugars_g is not None else "N/A",
+                "dietary_fibre_g": food.dietary_fibre_g if food.dietary_fibre_g is not None else "N/A",
+                "total_saturated_fatty_acids_g": (food.total_saturated_fatty_acids_mg / 1000.0) if food.total_saturated_fatty_acids_mg is not None else "N/A",
                 "cholesterol_mg": food.cholesterol_mg if food.cholesterol_mg is not None else "N/A",
                 "sodium_mg": food.sodium_mg if food.sodium_mg is not None else "N/A",
                 "potassium_mg": food.potassium_mg if food.potassium_mg is not None else "N/A",
                 "linoleic_mg": food.linoleic_mg if food.linoleic_mg is not None else "N/A",
-                "total_fat_g": food.total_fat_g if food.total_fat_g is not None else "N/A",
+                "vitamin_b1_mg": food.vitamin_b1_mg if food.vitamin_b1_mg is not None else "N/A",
+                "vitamin_b2_mg": food.vitamin_b2_mg if food.vitamin_b2_mg is not None else "N/A",
+                "vitamin_b3_mg": food.vitamin_b3_mg if food.vitamin_b3_mg is not None else "N/A",
+                "vitamin_b5_mg": food.vitamin_b5_mg if food.vitamin_b5_mg is not None else "N/A",
+                "vitamin_b6_mg": food.vitamin_b6_mg if food.vitamin_b6_mg is not None else "N/A",
+                "vitamin_b7_ug": food.vitamin_b7_ug if food.vitamin_b7_ug is not None else "N/A",
+                "vitamin_b9_ug": food.vitamin_b9_ug if food.vitamin_b9_ug is not None else "N/A",
+                "vitamin_c_mg": food.vitamin_c_mg if food.vitamin_c_mg is not None else "N/A",
+                "retinol_ug": food.retinol_ug if food.retinol_ug is not None else "N/A",
+                "vitamin_d2_ug": food.vitamin_d2_ug if food.vitamin_d2_ug is not None else "N/A",
+                "vitamin_d3_ug": food.vitamin_d3_ug if food.vitamin_d3_ug is not None else "N/A",
+                "alpha_tocopherol_eq_mg": food.alpha_tocopherol_eq_mg if food.alpha_tocopherol_eq_mg is not None else "N/A",
+                "vitamin_k1_ug": food.vitamin_k1_ug if food.vitamin_k1_ug is not None else "N/A",
+                "vitamin_k2_ug": food.vitamin_k2_ug if food.vitamin_k2_ug is not None else "N/A",
+                "calcium_mg": food.calcium_mg if food.calcium_mg is not None else "N/A",
+                "chromium_mg": food.chromium_mg if food.chromium_mg is not None else "N/A",
+                "copper_mg": food.copper_mg if food.copper_mg is not None else "N/A",
+                "iron_mg": food.iron_mg if food.iron_mg is not None else "N/A",
+                "magnesium_mg": food.magnesium_mg if food.magnesium_mg is not None else "N/A",
+                "manganese_mg": food.manganese_mg if food.manganese_mg is not None else "N/A",
+                "molybdenum_mg": food.molybdenum_mg if food.molybdenum_mg is not None else "N/A",
+                "phophorous_mg": food.phophorous_mg if food.phophorous_mg is not None else "N/A",
+                "selenium_ug": food.selenium_ug if food.selenium_ug is not None else "N/A",
+                "zinc_mg": food.zinc_mg if food.zinc_mg is not None else "N/A",
+                "energy_kj": food.energy_kj if food.energy_kj is not None else "N/A",
+
             }
             grouped_results.setdefault(category, []).append(food_data)
 
