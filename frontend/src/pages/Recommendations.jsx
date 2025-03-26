@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "react-router-dom";
 import api from "../api";
@@ -46,10 +46,48 @@ function Recommendations() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const [selectedFood, setSelectedFood] = useState(null);
-  const closeModal = () => setSelectedFood(null);
+  // State for modal (food details)
+  const [selectedFoodModal, setSelectedFoodModal] = useState(null);
+  const closeModal = () => setSelectedFoodModal(null);
 
-  // Helper to display full goal text.
+  // State for foods selected via single click
+  const [selectedFoods, setSelectedFoods] = useState([]);
+  // Ref to manage single click timer (to differentiate from double click)
+  const clickTimer = useRef(null);
+
+  // Toggle food selection: if already selected, remove it; otherwise, add it
+  const toggleSelection = (food) => {
+    setSelectedFoods((prev) => {
+      const exists = prev.find((item) => item.food_id === food.food_id);
+      if (exists) {
+        return prev.filter((item) => item.food_id !== food.food_id);
+      } else {
+        return [...prev, food];
+      }
+    });
+  };
+
+  // Single click handler (debounced)
+  const handleClick = (food) => {
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current);
+    }
+    clickTimer.current = setTimeout(() => {
+      toggleSelection(food);
+      clickTimer.current = null;
+    }, 200); // 200ms delay to differentiate from double click
+  };
+
+  // Double click handler cancels single-click timer and opens modal
+  const handleDoubleClick = (food) => {
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current);
+      clickTimer.current = null;
+    }
+    setSelectedFoodModal(food);
+  };
+
+  // Helper to display full goal text
   const getGoalText = (goal) => {
     switch (goal) {
       case "lose":
@@ -63,14 +101,14 @@ function Recommendations() {
     }
   };
 
-  // Colors: using light shades.
+  // Define colors for interpolation (using light shades)
   const pureGreen = [16, 185, 129]; // bright green (Tailwind green-500)
   const midColor = [234, 179, 8]; // bright yellow (Tailwind yellow-500)
   const pureRed = [239, 68, 68]; // bright red (Tailwind red-500)
 
-  // Compute background color based on index.
+  // Compute background color based on index
   const getCardBackground = (index, total) => {
-    if (total === 1) return `rgba(${pureGreen.join(",")}, 0.8`;
+    if (total === 1) return `rgba(${pureGreen.join(",")}, 0.8)`;
     const mid = Math.floor(total / 2);
     let color;
     if (index <= mid) {
@@ -81,6 +119,24 @@ function Recommendations() {
       color = interpolateColor(midColor, pureRed, ratio);
     }
     return `rgba(${color.join(",")}, 0.8)`;
+  };
+
+  // Function to "create meals" using the selected food array
+  const handleCreateMeals = async () => {
+    try {
+      const foodIds = selectedFoods.map((food) => food.food_id);
+      const meals_per_day = 3;
+      // New payload for macro optimization and enumeration.
+      const response = await api.post("/api/meal-plan-optimization/", {
+        goal,
+        meals_per_day,
+        food_ids: foodIds,
+      });
+      console.log("ML Preprocessing Response:", response.data);
+      // Process response.data.meal_plans as needed.
+    } catch (error) {
+      console.error("Error in ML Preprocessing:", error);
+    }
   };
 
   if (isLoading) return <div>Loading recommendations...</div>;
@@ -151,7 +207,7 @@ function Recommendations() {
 
         {/* Food Cards Section per Category */}
         {categories.map((category) => {
-          // Sort foods by score descending.
+          // Sort foods by score descending
           const foods = [...recommendations.recommended_foods[category]].sort(
             (a, b) => b.score - a.score
           );
@@ -161,14 +217,20 @@ function Recommendations() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {foods.map((food, idx) => {
                   const bgColor = getCardBackground(idx, foods.length);
+                  const isSelected = selectedFoods.find(
+                    (item) => item.food_id === food.food_id
+                  );
                   return (
                     <div
                       key={food.food_id}
-                      className="border border-black rounded-lg p-4 shadow transition-shadow cursor-pointer"
-                      style={{
-                        backgroundColor: bgColor,
-                      }}
-                      onClick={() => setSelectedFood(food)}
+                      className={`border rounded-lg p-4 shadow transition-transform duration-300 cursor-pointer ${
+                        isSelected
+                          ? "border-4 border-white scale-105 shadow-xl"
+                          : "border-black"
+                      }`}
+                      style={{ backgroundColor: bgColor }}
+                      onClick={() => handleClick(food)}
+                      onDoubleClick={() => handleDoubleClick(food)}
                     >
                       <h3 className="text-xl font-semibold relative">
                         {food.name}
@@ -183,11 +245,25 @@ function Recommendations() {
             </div>
           );
         })}
+        {/* Create Meals Button */}
+        <div className="flex justify-center mt-10">
+          <button
+            className={`btn text-xl px-16 py-6 transition-transform duration-300 transform hover:scale-105 ${
+              selectedFoods.length >= 7
+                ? "bg-gradient-to-r from-green-500 to-blue-800 opacity-100 cursor-pointer"
+                : "bg-gray-400 opacity-50 cursor-not-allowed"
+            }`}
+            disabled={selectedFoods.length < 7}
+            onClick={handleCreateMeals}
+          >
+            Create Meals
+          </button>
+        </div>
       </div>
       <br />
 
       {/* Modal for Food Details */}
-      {selectedFood && (
+      {selectedFoodModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
           <div className="absolute inset-0" onClick={closeModal}></div>
           <div className="relative bg-black bg-opacity-70 rounded-lg p-6 max-w-2xl w-full z-10 border border-white shadow-lg overflow-y-auto max-h-[80vh]">
@@ -198,7 +274,7 @@ function Recommendations() {
               &times;
             </button>
             <h2 className="text-3xl text-green-500 font-bold mb-6">
-              {selectedFood.name}
+              {selectedFoodModal.name}
             </h2>
 
             {/* Macronutrients Section */}
@@ -208,42 +284,45 @@ function Recommendations() {
               </h3>
               <div className="grid grid-cols-2 gap-2 text-green-100">
                 <div>
-                  <strong>Protein:</strong> {selectedFood.protein_g} g
+                  <strong>Protein:</strong> {selectedFoodModal.protein_g} g
                 </div>
                 <div>
-                  <strong>Total Fat:</strong> {selectedFood.total_fat_g} g
+                  <strong>Total Fat:</strong> {selectedFoodModal.total_fat_g} g
                 </div>
                 <div>
                   <strong>Carbs:</strong>{" "}
-                  {selectedFood.carbs
-                    ? selectedFood.carbs
-                    : selectedFood.total_available_cho_g}{" "}
+                  {selectedFoodModal.carbs
+                    ? selectedFoodModal.carbs
+                    : selectedFoodModal.total_available_cho_g}{" "}
                   g
                 </div>
                 <div>
-                  <strong>Sugars:</strong> {selectedFood.total_free_sugars_g} g
+                  <strong>Sugars:</strong>{" "}
+                  {selectedFoodModal.total_free_sugars_g} g
                 </div>
                 <div>
-                  <strong>Fiber:</strong> {selectedFood.dietary_fibre_g} g
+                  <strong>Fiber:</strong> {selectedFoodModal.dietary_fibre_g} g
                 </div>
                 <div>
                   <strong>Sat. Fat:</strong>{" "}
-                  {selectedFood.total_saturated_fatty_acids_g} g
+                  {selectedFoodModal.total_saturated_fatty_acids_g} g
                 </div>
                 <div>
-                  <strong>Cholesterol:</strong> {selectedFood.cholesterol_mg} mg
+                  <strong>Cholesterol:</strong>{" "}
+                  {selectedFoodModal.cholesterol_mg} mg
                 </div>
                 <div>
-                  <strong>Sodium:</strong> {selectedFood.sodium_mg} mg
+                  <strong>Sodium:</strong> {selectedFoodModal.sodium_mg} mg
                 </div>
                 <div>
-                  <strong>Potassium:</strong> {selectedFood.potassium_mg} mg
+                  <strong>Potassium:</strong> {selectedFoodModal.potassium_mg}{" "}
+                  mg
                 </div>
                 <div>
-                  <strong>Linoleic:</strong> {selectedFood.linoleic_mg} mg
+                  <strong>Linoleic:</strong> {selectedFoodModal.linoleic_mg} mg
                 </div>
                 <div>
-                  <strong>Energy:</strong> {selectedFood.energy_kj} kJ
+                  <strong>Energy:</strong> {selectedFoodModal.energy_kj} kJ
                 </div>
               </div>
             </div>
@@ -255,47 +334,47 @@ function Recommendations() {
               </h3>
               <div className="grid grid-cols-2 gap-2 text-green-100">
                 <div>
-                  <strong>Vit. B1:</strong> {selectedFood.vitamin_b1_mg} mg
+                  <strong>Vit. B1:</strong> {selectedFoodModal.vitamin_b1_mg} mg
                 </div>
                 <div>
-                  <strong>Vit. B2:</strong> {selectedFood.vitamin_b2_mg} mg
+                  <strong>Vit. B2:</strong> {selectedFoodModal.vitamin_b2_mg} mg
                 </div>
                 <div>
-                  <strong>Vit. B3:</strong> {selectedFood.vitamin_b3_mg} mg
+                  <strong>Vit. B3:</strong> {selectedFoodModal.vitamin_b3_mg} mg
                 </div>
                 <div>
-                  <strong>Vit. B5:</strong> {selectedFood.vitamin_b5_mg} mg
+                  <strong>Vit. B5:</strong> {selectedFoodModal.vitamin_b5_mg} mg
                 </div>
                 <div>
-                  <strong>Vit. B6:</strong> {selectedFood.vitamin_b6_mg} mg
+                  <strong>Vit. B6:</strong> {selectedFoodModal.vitamin_b6_mg} mg
                 </div>
                 <div>
-                  <strong>Vit. B7:</strong> {selectedFood.vitamin_b7_ug} µg
+                  <strong>Vit. B7:</strong> {selectedFoodModal.vitamin_b7_ug} µg
                 </div>
                 <div>
-                  <strong>Vit. B9:</strong> {selectedFood.vitamin_b9_ug} µg
+                  <strong>Vit. B9:</strong> {selectedFoodModal.vitamin_b9_ug} µg
                 </div>
                 <div>
-                  <strong>Vit. C:</strong> {selectedFood.vitamin_c_mg} mg
+                  <strong>Vit. C:</strong> {selectedFoodModal.vitamin_c_mg} mg
                 </div>
                 <div>
-                  <strong>Retinol:</strong> {selectedFood.retinol_ug} µg
+                  <strong>Retinol:</strong> {selectedFoodModal.retinol_ug} µg
                 </div>
                 <div>
-                  <strong>Vit. D2:</strong> {selectedFood.vitamin_d2_ug} µg
+                  <strong>Vit. D2:</strong> {selectedFoodModal.vitamin_d2_ug} µg
                 </div>
                 <div>
-                  <strong>Vit. D3:</strong> {selectedFood.vitamin_d3_ug} µg
+                  <strong>Vit. D3:</strong> {selectedFoodModal.vitamin_d3_ug} µg
                 </div>
                 <div>
-                  <strong>Vit. E:</strong> {selectedFood.alpha_tocopherol_eq_mg}{" "}
-                  mg
+                  <strong>Vit. E:</strong>{" "}
+                  {selectedFoodModal.alpha_tocopherol_eq_mg} mg
                 </div>
                 <div>
-                  <strong>Vit. K1:</strong> {selectedFood.vitamin_k1_ug} µg
+                  <strong>Vit. K1:</strong> {selectedFoodModal.vitamin_k1_ug} µg
                 </div>
                 <div>
-                  <strong>Vit. K2:</strong> {selectedFood.vitamin_k2_ug} µg
+                  <strong>Vit. K2:</strong> {selectedFoodModal.vitamin_k2_ug} µg
                 </div>
               </div>
             </div>
@@ -307,34 +386,38 @@ function Recommendations() {
               </h3>
               <div className="grid grid-cols-2 gap-2 text-green-100">
                 <div>
-                  <strong>Calcium:</strong> {selectedFood.calcium_mg} mg
+                  <strong>Calcium:</strong> {selectedFoodModal.calcium_mg} mg
                 </div>
                 <div>
-                  <strong>Chromium:</strong> {selectedFood.chromium_mg} mg
+                  <strong>Chromium:</strong> {selectedFoodModal.chromium_mg} mg
                 </div>
                 <div>
-                  <strong>Copper:</strong> {selectedFood.copper_mg} mg
+                  <strong>Copper:</strong> {selectedFoodModal.copper_mg} mg
                 </div>
                 <div>
-                  <strong>Iron:</strong> {selectedFood.iron_mg} mg
+                  <strong>Iron:</strong> {selectedFoodModal.iron_mg} mg
                 </div>
                 <div>
-                  <strong>Magnesium:</strong> {selectedFood.magnesium_mg} mg
+                  <strong>Magnesium:</strong> {selectedFoodModal.magnesium_mg}{" "}
+                  mg
                 </div>
                 <div>
-                  <strong>Manganese:</strong> {selectedFood.manganese_mg} mg
+                  <strong>Manganese:</strong> {selectedFoodModal.manganese_mg}{" "}
+                  mg
                 </div>
                 <div>
-                  <strong>Molybdenum:</strong> {selectedFood.molybdenum_mg} mg
+                  <strong>Molybdenum:</strong> {selectedFoodModal.molybdenum_mg}{" "}
+                  mg
                 </div>
                 <div>
-                  <strong>Phosphorus:</strong> {selectedFood.phophorous_mg} mg
+                  <strong>Phosphorus:</strong> {selectedFoodModal.phophorous_mg}{" "}
+                  mg
                 </div>
                 <div>
-                  <strong>Selenium:</strong> {selectedFood.selenium_ug} µg
+                  <strong>Selenium:</strong> {selectedFoodModal.selenium_ug} µg
                 </div>
                 <div>
-                  <strong>Zinc:</strong> {selectedFood.zinc_mg} mg
+                  <strong>Zinc:</strong> {selectedFoodModal.zinc_mg} mg
                 </div>
               </div>
             </div>

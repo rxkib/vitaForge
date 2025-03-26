@@ -1,4 +1,5 @@
 # backend/api/views.py
+import logging
 from rest_framework import status
 from django.contrib.auth.models import User
 from rest_framework import generics, serializers
@@ -12,6 +13,11 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_GET
 from django.shortcuts import get_object_or_404
 import requests
+import pandas as pd
+#from .ml.optimization import compute_meal_targets, optimize_meal_plan
+from .ml.data_preprocessing import get_food_macro_data
+from .ml.optimization import compute_macro_targets
+from .ml.meal_plan_optimizer import MealPlanOptimizer
 
 from .constraints import (
     compute_calorie_target,
@@ -280,3 +286,46 @@ class RecommendationView(APIView):
             grouped_results.setdefault(category, []).append(food_data)
 
         return Response({"recommended_foods": grouped_results})
+
+
+# Configure a logger for this module.
+logger = logging.getLogger(__name__)
+
+class MealPlanOptimizationView(APIView):
+    def post(self, request):
+        try:
+            profile = get_object_or_404(HealthProfile, user=request.user)
+            age = profile.age
+            height_cm = profile.height
+            weight_kg = profile.weight
+            goal = request.data.get("goal", "maintain")
+            meals_per_day = int(request.data.get("meals_per_day", 3))
+            
+            # Compute macro targets based on user profile and goal
+            macro_targets = compute_macro_targets(age, height_cm, weight_kg, goal, meals_per_day)
+            
+            # Optionally filter foods by food_ids if provided
+            food_ids = request.data.get("food_ids", None)
+            if food_ids:
+                foods_qs = FoodItem.objects.filter(id__in=food_ids)
+            else:
+                foods_qs = FoodItem.objects.all()
+            
+            # Obtain macro data for the selected foods
+            food_macro_data = get_food_macro_data(food_ids=food_ids)
+            
+            # Instantiate and run the MealPlanOptimizer
+            optimizer = MealPlanOptimizer(food_macro_data, macro_targets, n_clusters=3)
+            meal_plans, selected_foods, targets = optimizer.generate_plan()
+            
+            return Response({
+                "macro_targets": targets,
+                "meal_plans": meal_plans,
+                "selected_foods": selected_foods.tolist()  # convert numpy array to list for JSON serialization
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception("Meal plan optimization failed")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
