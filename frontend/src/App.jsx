@@ -15,6 +15,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import "animate.css";
 import Recommendations from "./pages/Recommendations";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
+import MealPlanResults from "./pages/MealPlanResults";
 
 function Logout() {
   const { logout } = useContext(AuthContext);
@@ -81,6 +82,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Recommendations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/meal-plan-results"
+            element={
+              <ProtectedRoute>
+                <MealPlanResults />
               </ProtectedRoute>
             }
           />

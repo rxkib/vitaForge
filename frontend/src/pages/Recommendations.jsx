@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "react-router-dom";
 import api from "../api";
+import { useNavigate } from "react-router-dom";
 
 function useQueryParams() {
   return new URLSearchParams(useLocation().search);
@@ -29,6 +30,7 @@ function Recommendations() {
   const goal = queryParams.get("goal") || "maintain";
   const region = queryParams.get("region") || "";
   const condition = queryParams.get("condition") || "";
+  const navigate = useNavigate();
 
   const {
     data: recommendations,
@@ -112,10 +114,10 @@ function Recommendations() {
     const mid = Math.floor(total / 2);
     let color;
     if (index <= mid) {
-      const ratio = mid === 0 ? 0 : index / mid; // 0 (best) to 1 (mid)
+      const ratio = mid === 0 ? 0 : index / mid;
       color = interpolateColor(pureGreen, midColor, ratio);
     } else {
-      const ratio = (index - mid) / (total - 1 - mid); // 0 (mid) to 1 (worst)
+      const ratio = (index - mid) / (total - 1 - mid);
       color = interpolateColor(midColor, pureRed, ratio);
     }
     return `rgba(${color.join(",")}, 0.8)`;
@@ -126,14 +128,14 @@ function Recommendations() {
     try {
       const foodIds = selectedFoods.map((food) => food.food_id);
       const meals_per_day = 3;
-      // New payload for macro optimization and enumeration.
       const response = await api.post("/api/meal-plan-optimization/", {
         goal,
         meals_per_day,
         food_ids: foodIds,
       });
       console.log("ML Preprocessing Response:", response.data);
-      // Process response.data.meal_plans as needed.
+      // Navigate to the new MealPlanResults page with the ML response data passed in state
+      navigate("/meal-plan-results", { state: response.data });
     } catch (error) {
       console.error("Error in ML Preprocessing:", error);
     }
@@ -142,6 +144,7 @@ function Recommendations() {
   if (isLoading) return <div>Loading recommendations...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
+  // 'recommendations.recommended_foods' is assumed to be grouped by main category from the backend.
   const categories = Object.keys(recommendations.recommended_foods);
 
   return (

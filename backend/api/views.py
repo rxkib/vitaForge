@@ -14,10 +14,13 @@ from django.views.decorators.http import require_GET
 from django.shortcuts import get_object_or_404
 import requests
 import pandas as pd
+import numpy as np
 #from .ml.optimization import compute_meal_targets, optimize_meal_plan
-from .ml.data_preprocessing import get_food_macro_data
+from .ml.data_preprocessing import get_food_category_data
 from .ml.optimization import compute_macro_targets
-from .ml.meal_plan_optimizer import MealPlanOptimizer
+from api.ml.meal_plan_optimizer import generate_meal_plan, compute_daily_macro_targets
+from .ml.optimization import compute_daily_macro_targets
+
 
 from .constraints import (
     compute_calorie_target,
@@ -184,19 +187,30 @@ class CreateUserView(generics.CreateAPIView):
 
 class RecommendationView(APIView):
     permission_classes = [IsAuthenticated]
+
     def get(self, request):
         goal = request.GET.get("goal", "maintain")
         selected_region = request.GET.get("region", None)
-        # Allow override via query parameter "condition"
-        if request.GET.get("condition"):
-            conditions = [request.GET.get("condition").strip().lower()]
-        elif HealthProfile.objects.filter(user=request.user).exists():
-            profile = HealthProfile.objects.filter(user=request.user).first()
-            conditions = [cond.strip().lower() for cond in profile.health_conditions.split(",")] if profile.health_conditions else []
-        else:
-            conditions = []
+        condition_param = request.GET.get("condition")
 
-        profile = get_object_or_404(HealthProfile, user=request.user)
+        try:
+            profile = HealthProfile.objects.get(user=request.user)
+        except HealthProfile.DoesNotExist:
+            return Response(
+                {"error": "Health profile not found. Please set up your health profile."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Determine health conditions from query parameter or from profile
+        if condition_param:
+            conditions = [condition_param.strip().lower()]
+        else:
+            conditions = (
+                [cond.strip().lower() for cond in profile.health_conditions.split(",")]
+                if profile.health_conditions
+                else []
+            )
+
         age = profile.age
         height_cm = profile.height
         weight_kg = profile.weight
@@ -220,10 +234,11 @@ class RecommendationView(APIView):
             constraints_list.append(ArthritisConstraints(arthritis_limits, meals_per_day=3))
         if "high_cholesterol" in conditions:
             constraints_list.append(HighCholesterolConstraints(high_cholesterol_limits, meals_per_day=3))
-        # If the user selects "none" or no condition is provided, use general constraints.
+        # If no conditions or "none" is specified, use general constraints.
         if "none" in conditions or not conditions:
             constraints_list.append(GeneralConstraints(general_limits, meals_per_day=3))
         if not constraints_list:
+            # Fallback constraint if none were added.
             class NoConstraints:
                 def food_score(self, food):
                     return 0
@@ -231,17 +246,32 @@ class RecommendationView(APIView):
 
         composite = CompositeConstraints(constraints_list)
 
+        # Filter foods by region if provided.
         if selected_region:
             all_foods = FoodItem.objects.filter(region__in=[selected_region, "Both"])
         else:
             all_foods = FoodItem.objects.all()
 
+        # Calculate a score for each food using the composite constraints.
         scored_list = [(food, composite.food_score(food)) for food in all_foods]
         scored_list.sort(key=lambda x: x[1], reverse=True)
 
+        # Instead of mapping solely based on tags, determine each food's primary macro
+        # by looking at its actual nutritional values.
+        def get_primary_macro(food):
+            protein = food.protein_g if food.protein_g is not None else 0
+            # Use carbs_g if available, otherwise fallback to total_available_cho_g
+            carbs = food.carbs_g if food.carbs_g is not None else (food.total_available_cho_g or 0)
+            fat = food.total_fat_g if food.total_fat_g is not None else 0
+            macros = {"Protein": protein, "Carbs": carbs, "Fat": fat}
+            primary_macro = max(macros, key=macros.get)
+            if macros[primary_macro] == 0:
+                return "Others"
+            return primary_macro
+
         grouped_results = {}
         for food, score in scored_list:
-            category = food.tags.split(",")[0].strip() if food.tags else "Uncategorized"
+            main_category = get_primary_macro(food)
             food_data = {
                 "food_id": food.id,
                 "name": food.name,
@@ -251,7 +281,11 @@ class RecommendationView(APIView):
                 "carbs": food.carbs_g if food.carbs_g is not None else (food.total_available_cho_g or "N/A"),
                 "total_free_sugars_g": food.total_free_sugars_g if food.total_free_sugars_g is not None else "N/A",
                 "dietary_fibre_g": food.dietary_fibre_g if food.dietary_fibre_g is not None else "N/A",
-                "total_saturated_fatty_acids_g": (food.total_saturated_fatty_acids_mg / 1000.0) if food.total_saturated_fatty_acids_mg is not None else "N/A",
+                "total_saturated_fatty_acids_g": (
+                    food.total_saturated_fatty_acids_mg / 1000.0
+                    if food.total_saturated_fatty_acids_mg is not None
+                    else "N/A"
+                ),
                 "cholesterol_mg": food.cholesterol_mg if food.cholesterol_mg is not None else "N/A",
                 "sodium_mg": food.sodium_mg if food.sodium_mg is not None else "N/A",
                 "potassium_mg": food.potassium_mg if food.potassium_mg is not None else "N/A",
@@ -281,15 +315,13 @@ class RecommendationView(APIView):
                 "selenium_ug": food.selenium_ug if food.selenium_ug is not None else "N/A",
                 "zinc_mg": food.zinc_mg if food.zinc_mg is not None else "N/A",
                 "energy_kj": food.energy_kj if food.energy_kj is not None else "N/A",
-
             }
-            grouped_results.setdefault(category, []).append(food_data)
+            grouped_results.setdefault(main_category, []).append(food_data)
 
         return Response({"recommended_foods": grouped_results})
 
 
-# Configure a logger for this module.
-logger = logging.getLogger(__name__)
+
 
 class MealPlanOptimizationView(APIView):
     def post(self, request):
@@ -299,33 +331,23 @@ class MealPlanOptimizationView(APIView):
             height_cm = profile.height
             weight_kg = profile.weight
             goal = request.data.get("goal", "maintain")
-            meals_per_day = int(request.data.get("meals_per_day", 3))
             
-            # Compute macro targets based on user profile and goal
-            macro_targets = compute_macro_targets(age, height_cm, weight_kg, goal, meals_per_day)
+            # Compute daily targets for meal plan.
+            daily_targets = compute_daily_macro_targets(age, height_cm, weight_kg, goal)
             
-            # Optionally filter foods by food_ids if provided
+            # Get food_ids from request.
             food_ids = request.data.get("food_ids", None)
-            if food_ids:
-                foods_qs = FoodItem.objects.filter(id__in=food_ids)
-            else:
-                foods_qs = FoodItem.objects.all()
             
-            # Obtain macro data for the selected foods
-            food_macro_data = get_food_macro_data(food_ids=food_ids)
-            
-            # Instantiate and run the MealPlanOptimizer
-            optimizer = MealPlanOptimizer(food_macro_data, macro_targets, n_clusters=3)
-            meal_plans, selected_foods, targets = optimizer.generate_plan()
+            # Generate a meal plan using the GA method.
+            plan, targets = generate_meal_plan(food_ids, daily_targets, population_size=50, generations=200, min_portion=20, max_portion=500, min_foods=3)
+
             
             return Response({
-                "macro_targets": targets,
-                "meal_plans": meal_plans,
-                "selected_foods": selected_foods.tolist()  # convert numpy array to list for JSON serialization
+                "daily_targets": targets,
+                "meal_plan": plan,
             }, status=status.HTTP_200_OK)
-            
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
-            logger.exception("Meal plan optimization failed")
+            logger.exception("Daily meal plan optimization failed")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
