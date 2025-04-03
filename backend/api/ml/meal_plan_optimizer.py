@@ -12,6 +12,7 @@ def compute_recommended_max(categories, names):
         (["grains"], 350),
         (["vegetable", "leafy vegetable"], 400),
         (["legume", "poultry", "offal", "egg", "fish", "paneer", "milk", "red meat"], 250),
+        (["peanut butter"], 5),
         (["oil", "condiment", "confectionery", "sweetener", "butter"], 10),
         (["coffee"], 10),
         (["nut", "peanut", "seed"], 30),

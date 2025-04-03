@@ -2,7 +2,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import UserMeView, DailyLogView, DailyLogRecapView, proxy_exercises, WeightHistoryView, CreateUserView, HealthProfileView, HealthProfileDetail, RecommendationView, MealPlanOptimizationView
-
+from .views import SavedMealPlanView
 
 urlpatterns = [
     # Registration
@@ -26,4 +26,6 @@ urlpatterns = [
     path("recommendations/", RecommendationView.as_view(), name="recommendations"),
     #ML
     path("meal-plan-optimization/", MealPlanOptimizationView.as_view(), name="meal_plan_optimization"),
+    path("meal-plan/", SavedMealPlanView.as_view(), name="saved_meal_plan"),
+    
 ]

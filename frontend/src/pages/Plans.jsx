@@ -1,20 +1,37 @@
-// src/pages/Plans.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import api from "../api";
 
 function Plans() {
   const navigate = useNavigate();
   const [goal, setGoal] = useState(null);
-  const [region, setRegion] = useState(""); // Region will be chosen from options
+  const [region, setRegion] = useState("");
   const [loadingGoal, setLoadingGoal] = useState(false);
-  const [showCards, setShowCards] = useState(false);
 
-  // When a goal is selected, simply set it
+  // On mount, check if a saved meal plan exists. If it does, automatically navigate to it.
+  useEffect(() => {
+    api
+      .get("/api/meal-plan/")
+      .then((res) => {
+        // If a saved meal plan is found, navigate immediately to meal plan results.
+        navigate("/meal-plan-results", {
+          state: {
+            daily_targets: res.data.daily_targets,
+            meal_plan: res.data.plan,
+          },
+        });
+      })
+      .catch((error) => {
+        // If no saved plan is found, remain on this page.
+      });
+  }, [navigate]);
+
+  // Set the selected goal.
   const handleGoalSelection = (selectedGoal) => {
     setGoal(selectedGoal);
   };
 
-  // When user confirms their region, then start processing
+  // Once the region is selected, show a loading indicator then navigate to generate a new meal plan.
   const handleContinue = () => {
     if (!region) {
       alert("Please select your region");
@@ -23,8 +40,8 @@ function Plans() {
     setLoadingGoal(true);
     setTimeout(() => {
       setLoadingGoal(false);
-      setShowCards(true);
-    }, 1500);
+      navigate(`/recommendations?goal=${goal}&region=${region}`);
+    }, 800);
   };
 
   return (
@@ -61,7 +78,7 @@ function Plans() {
       <br />
 
       <div className="flex-grow flex flex-col items-center justify-center p-4 mt-20">
-        {/* Step 1: Goal Selection */}
+        {/* If no goal is selected, show the goal selection card */}
         {!goal && !loadingGoal && (
           <div className="card w-full max-w-3xl mx-auto bg-base-200 shadow-2xl glass border border-base-content/10 animate__animated animate__fadeInDown">
             <div className="card-body text-center p-10">
@@ -69,7 +86,7 @@ function Plans() {
                 What's Your Goal?
               </h2>
               <p className="text-gray-500 mb-8 leading-relaxed tracking-wide">
-                Choose an option to receive personalized recommendations.
+                Choose an option to receive personalized meal plan recommendations.
               </p>
               <div className="flex flex-wrap gap-4 justify-center">
                 <button
@@ -95,8 +112,8 @@ function Plans() {
           </div>
         )}
 
-        {/* Step 2: Region Selection (shown after goal is selected) */}
-        {goal && !loadingGoal && !showCards && (
+        {/* Once a goal is selected, show the region selection card */}
+        {goal && !loadingGoal && (
           <div className="card w-full max-w-md mx-auto bg-base-200 shadow-2xl glass border border-base-content/10 animate__animated animate__fadeInDown p-6 mt-4">
             <h2 className="card-title text-2xl font-bold mb-4">
               Select Your Region
@@ -116,34 +133,10 @@ function Plans() {
           </div>
         )}
 
-        {/* Step 3: Loading Indicator */}
         {loadingGoal && (
           <div className="flex flex-col items-center">
             <span className="loading loading-bars loading-md"></span>
-            <p className="mt-4 text-lg">Generating personalized plans...</p>
-          </div>
-        )}
-
-        {/* Step 4: Show Meals/Exercises Cards */}
-        {showCards && (
-          <div className="flex w-full flex-col lg:flex-row items-center justify-center gap-8">
-            {/* Meals Card */}
-            <div
-              className="card bg-base-300 rounded-box w-full max-w-md h-56 grid place-items-center transform transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-500 hover:to-green-500 cursor-pointer"
-              onClick={() =>
-                navigate(`/recommendations?goal=${goal}&region=${region}`)
-              }
-            >
-              <h2 className="text-3xl font-bold">Meals</h2>
-            </div>
-            <div className="divider lg:divider-horizontal"></div>
-            {/* Exercises Card */}
-            <div
-              className="card bg-base-300 rounded-box w-full max-w-md h-56 grid place-items-center transform transition-all duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 cursor-pointer"
-              onClick={() => navigate("/exercises")}
-            >
-              <h2 className="text-3xl font-bold">Exercises</h2>
-            </div>
+            <p className="mt-4 text-lg">Generating personalized meal plan...</p>
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import HealthProfile
 from .models import DailyLog
+from .models import MealPlan
 
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
@@ -45,3 +46,9 @@ class DailyLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = DailyLog
         fields = ["date", "status"]
+
+
+class MealPlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MealPlan
+        fields = ['id', 'plan', 'daily_targets', 'created_at']

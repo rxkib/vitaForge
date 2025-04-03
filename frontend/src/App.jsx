@@ -16,6 +16,7 @@ import "animate.css";
 import Recommendations from "./pages/Recommendations";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 import MealPlanResults from "./pages/MealPlanResults";
+import Settings from "./pages/Settings";
 
 function Logout() {
   const { logout } = useContext(AuthContext);
@@ -90,6 +91,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MealPlanResults />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             }
           />

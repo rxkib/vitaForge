@@ -128,3 +128,14 @@ class FoodItem(models.Model):
 
     def __str__(self):
         return self.name or "Unnamed Food"
+    
+
+
+class MealPlan(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='meal_plan')
+    plan = models.JSONField(help_text="Mapping of food names to portion sizes")
+    daily_targets = models.JSONField(help_text="Daily nutritional targets used for the plan")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Meal Plan for {self.user.username} created at {self.created_at}"
