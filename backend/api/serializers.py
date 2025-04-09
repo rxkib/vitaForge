@@ -4,6 +4,7 @@ from rest_framework import serializers
 from .models import HealthProfile
 from .models import DailyLog
 from .models import MealPlan
+from .models import Feedback
 
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
@@ -52,3 +53,22 @@ class MealPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = MealPlan
         fields = ['id', 'plan', 'daily_targets', 'created_at']
+
+# Custom recursive field for nested replies.
+class RecursiveField(serializers.Serializer):
+    def to_representation(self, value):
+        serializer = self.parent.parent.__class__(value, context=self.context)
+        return serializer.data
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    # Make sure 'parent' is writable.
+    parent = serializers.PrimaryKeyRelatedField(
+        queryset=Feedback.objects.all(), allow_null=True, required=False
+    )
+    replies = RecursiveField(many=True, read_only=True)
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %I:%M %p", read_only=True)
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Feedback
+        fields = ['id', 'user', 'message', 'created_at', 'parent', 'replies']

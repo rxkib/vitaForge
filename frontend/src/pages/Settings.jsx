@@ -1,12 +1,16 @@
-import React, { useState } from "react";
+// src/pages/Settings.jsx
+import React, { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api";
+import { AuthContext } from "../context/AuthContext";
 
 function Settings() {
   const navigate = useNavigate();
-  const [feedback, setFeedback] = useState("");
+  const { authState } = useContext(AuthContext);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [userCases, setUserCases] = useState([]);
 
-  // Function to delete the user's account
+  // Delete account function (unchanged)
   const handleDeleteAccount = async () => {
     if (
       window.confirm(
@@ -24,13 +28,9 @@ function Settings() {
     }
   };
 
-  // Function to delete the current saved meal plan (if it exists)
+  // Delete meal plan function (unchanged)
   const handleDeleteMealPlan = async () => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete your saved meal plan?"
-      )
-    ) {
+    if (window.confirm("Are you sure you want to delete your saved meal plan?")) {
       try {
         await api.delete("/api/meal-plan/");
         alert("Meal plan deleted successfully");
@@ -41,23 +41,142 @@ function Settings() {
     }
   };
 
-  // Function to handle feedback submission (placeholder)
+  // New feedback submission function
   const handleSendFeedback = async () => {
-    if (feedback.trim() === "") {
+    if (feedbackText.trim() === "") {
       alert("Please enter your feedback or complaint.");
       return;
     }
-    // Placeholder for sending feedback to admin
-    alert("Thank you for your feedback. This feature will be implemented soon.");
-    setFeedback("");
+    try {
+      // Post feedback (creates a new case at the top level)
+      await api.post("/api/feedback/", { message: feedbackText });
+      alert("Thank you for your feedback!");
+      setFeedbackText("");
+      fetchUserCases(); // Refresh the cases list after submission
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      alert("Error submitting feedback. Please try again.");
+    }
   };
+
+  // Function to fetch all feedback and filter to only this user's top-level cases
+  const fetchUserCases = async () => {
+    try {
+      const res = await api.get("/api/feedback/");
+      // Assuming the API returns: { feedbacks: [ ... ] }
+      const allFeedback = res.data.feedbacks || [];
+      // Filter only top-level cases (parent is null) and where the user is the current user
+      const myCases = allFeedback.filter(
+        (fb) =>
+          fb.parent === null &&
+          fb.user === (authState.user ? authState.user.username : "")
+      );
+      setUserCases(myCases);
+    } catch (error) {
+      console.error("Error fetching feedback cases:", error);
+    }
+  };
+
+  // Fetch user's cases when the component mounts
+  useEffect(() => {
+    fetchUserCases();
+  }, []);
+
+  // Enhanced recursive component for displaying a case with replies, delete and reply options.
+  function FeedbackCase({ feedback, refreshCases }) {
+    const [showReplies, setShowReplies] = useState(false);
+    const [showReplyForm, setShowReplyForm] = useState(false);
+    const [replyText, setReplyText] = useState("");
+
+    const toggleReplies = () => setShowReplies((prev) => !prev);
+    const toggleReplyForm = () => setShowReplyForm((prev) => !prev);
+
+    const handleReplySubmit = async (e) => {
+      e.preventDefault();
+      if (replyText.trim() === "") return;
+      try {
+        // Post reply with the parent field set to the current feedback's id
+        await api.post("/api/feedback/", { message: replyText, parent: feedback.id });
+        setReplyText("");
+        setShowReplyForm(false);
+        refreshCases();
+      } catch (error) {
+        console.error("Error posting reply:", error);
+        alert("Error posting reply. Please try again.");
+      }
+    };
+
+    const handleDelete = async () => {
+      if (window.confirm("Are you sure you want to delete this message?")) {
+        try {
+          await api.delete(`/api/feedback/${feedback.id}/`);
+          refreshCases();
+          alert("Message deleted successfully.");
+        } catch (error) {
+          console.error("Error deleting message:", error);
+          alert("Error deleting message. Please try again.");
+        }
+      }
+    };
+
+    return (
+      <div className="feedback-item p-4 border rounded bg-gray-800 mb-2">
+        <div className="flex justify-between items-center">
+          <div>
+            <strong>{feedback.user}</strong>{" "}
+            <span className="text-sm text-gray-400">{feedback.created_at}</span>
+          </div>
+          <div>
+            <button className="btn btn-sm" onClick={toggleReplies}>
+              {showReplies ? "Hide Replies" : "Show Replies"}
+            </button>
+            {/* Always show the Reply button */}
+            <button className="btn btn-sm ml-2" onClick={toggleReplyForm}>
+              {showReplyForm ? "Cancel" : "Reply"}
+            </button>
+            {/* Allow deletion if the message belongs to the user */}
+            {feedback.user === authState.user.username && (
+              <button className="btn btn-sm btn-error ml-2" onClick={handleDelete}>
+                Delete
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="mt-2">{feedback.message}</p>
+        {showReplyForm && (
+          <form onSubmit={handleReplySubmit} className="mt-2">
+            <textarea
+              className="textarea textarea-bordered w-full"
+              rows="2"
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              placeholder="Enter your reply..."
+            ></textarea>
+            <button type="submit" className="btn btn-primary mt-1">
+              Send Reply
+            </button>
+          </form>
+        )}
+        {showReplies && feedback.replies && feedback.replies.length > 0 && (
+          <div className="ml-4 border-l pl-2 mt-2">
+            {feedback.replies.map((reply) => (
+              <FeedbackCase key={reply.id} feedback={reply} refreshCases={refreshCases} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
       {/* Navbar */}
       <div className="navbar bg-gray-800 shadow-lg fixed top-0 left-0 w-full z-50">
         <div className="navbar-start">
-          <Link to="/" className="btn btn-ghost normal-case text-xl flex items-center text-white">
+          <Link
+            to="/"
+            className="btn btn-ghost normal-case text-xl flex items-center text-white"
+          >
             <img src="/logo.png" alt="Logo" className="w-8 h-8 mr-2" />
             vitaForge
           </Link>
@@ -65,24 +184,34 @@ function Settings() {
         <div className="navbar-end">
           <ul className="menu menu-horizontal p-0 text-white">
             <li>
-              <Link to="/plans" className="text-white">Plans</Link>
+              <Link to="/plans" className="text-white">
+                Plans
+              </Link>
             </li>
             <li>
-              <Link to="/profile" className="text-white">View Profile</Link>
+              <Link to="/profile" className="text-white">
+                View Profile
+              </Link>
             </li>
             <li>
-              <Link to="/logout" className="text-white">Logout</Link>
+              <Link to="/logout" className="text-white">
+                Logout
+              </Link>
             </li>
           </ul>
         </div>
       </div>
 
       <div className="pt-20 container mx-auto p-4">
-        <h1 className="text-4xl font-bold mb-8 text-center text-white">Settings</h1>
+        <h1 className="text-4xl font-bold mb-8 text-center text-white">
+          Settings
+        </h1>
         <div className="grid gap-8">
           {/* Account Settings Section */}
           <div className="card bg-gray-800 shadow-md rounded p-6 text-gray-200">
-            <h2 className="text-2xl font-bold mb-4 text-white">Account Settings</h2>
+            <h2 className="text-2xl font-bold mb-4 text-white">
+              Account Settings
+            </h2>
             <p className="mb-4 text-gray-400">
               Manage your account details and view your profile.
             </p>
@@ -93,9 +222,12 @@ function Settings() {
 
           {/* Delete Account Section */}
           <div className="card bg-gray-800 shadow-md rounded p-6 text-gray-200">
-            <h2 className="text-2xl font-bold mb-4 text-white">Delete Account</h2>
+            <h2 className="text-2xl font-bold mb-4 text-white">
+              Delete Account
+            </h2>
             <p className="mb-4 text-gray-400">
-              Warning: Deleting your account is irreversible. All your data will be permanently removed.
+              Warning: Deleting your account is irreversible. All your data
+              will be permanently removed.
             </p>
             <button onClick={handleDeleteAccount} className="btn btn-error">
               Delete Account
@@ -104,7 +236,9 @@ function Settings() {
 
           {/* Delete Meal Plan Section */}
           <div className="card bg-gray-800 shadow-md rounded p-6 text-gray-200">
-            <h2 className="text-2xl font-bold mb-4 text-white">Delete Meal Plan</h2>
+            <h2 className="text-2xl font-bold mb-4 text-white">
+              Delete Meal Plan
+            </h2>
             <p className="mb-4 text-gray-400">
               If you have a saved meal plan, you can delete it and generate a new one.
             </p>
@@ -115,9 +249,12 @@ function Settings() {
 
           {/* Data & Privacy Section */}
           <div className="card bg-gray-800 shadow-md rounded p-6 text-gray-200">
-            <h2 className="text-2xl font-bold mb-4 text-white">Data & Privacy</h2>
+            <h2 className="text-2xl font-bold mb-4 text-white">
+              Data & Privacy
+            </h2>
             <p className="mb-4 text-gray-400">
-              All your data is securely recorded in our database. We adhere to standard data protection practices as expected in a typical fitness app.
+              All your data is securely recorded in our database. We adhere to
+              standard data protection practices as expected in a typical fitness app.
             </p>
           </div>
 
@@ -131,17 +268,35 @@ function Settings() {
 
           {/* Help & Feedback Section */}
           <div className="card bg-gray-800 shadow-md rounded p-6 text-gray-200">
-            <h2 className="text-2xl font-bold mb-4 text-white">Help & Feedback</h2>
+            <h2 className="text-2xl font-bold mb-4 text-white">
+              Help & Feedback
+            </h2>
             <textarea
               placeholder="Enter your complaint or feedback..."
               className="textarea textarea-bordered w-full bg-gray-700 text-gray-100"
               rows="4"
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
             ></textarea>
             <button onClick={handleSendFeedback} className="btn btn-info mt-4">
               Send Feedback
             </button>
+          </div>
+
+          {/* Your Cases Section */}
+          <div className="card bg-gray-800 shadow-md rounded p-6 mt-8 text-gray-200">
+            <h2 className="text-2xl font-bold mb-4 text-white">Your Cases</h2>
+            {userCases.length === 0 ? (
+              <p className="text-gray-400">
+                You haven’t submitted any cases yet.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {userCases.map((fb) => (
+                  <FeedbackCase key={fb.id} feedback={fb} refreshCases={fetchUserCases} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

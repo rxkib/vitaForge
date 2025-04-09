@@ -95,8 +95,9 @@ export const AuthProvider = ({ children }) => {
       accessToken: null,
       refreshToken: null,
       user: null,
+      loading: false,
     });
-  };
+  }
 
   // Refresh token logic
   const refreshAccessToken = async () => {

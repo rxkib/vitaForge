@@ -21,8 +21,10 @@ from .ml.optimization import compute_macro_targets
 from api.ml.meal_plan_optimizer import generate_meal_plan, compute_daily_macro_targets
 from .ml.optimization import compute_daily_macro_targets
 
-from .models import MealPlan
-from .serializers import MealPlanSerializer
+from .models import MealPlan, Feedback
+from .serializers import MealPlanSerializer,  FeedbackSerializer
+
+from .admin_views import AdminPermission
 
 from .constraints import (
     compute_calorie_target,
@@ -49,6 +51,8 @@ class UserMeView(APIView):
         return Response({
             "username": user.username,
             "email": user.email,
+            "is_staff": user.is_staff,
+            "is_superuser": user.is_superuser,  
         })
 
     def delete(self, request):
@@ -389,4 +393,34 @@ class SavedMealPlanView(APIView):
             meal_plan.delete()
             return Response({"detail": "Saved meal plan deleted."}, status=status.HTTP_200_OK)
         except MealPlan.DoesNotExist:
-            return Response({"detail": "No saved meal plan found."}, status=status.HTTP_404_NOT_FOUND)     
+            return Response({"detail": "No saved meal plan found."}, status=status.HTTP_404_NOT_FOUND) 
+
+
+class FeedbackView(generics.ListCreateAPIView):
+    serializer_class = FeedbackSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Only return top-level feedback (parent is null)
+        return Feedback.objects.filter(parent__isnull=True).order_by("-created_at")
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        # Return as: { "feedbacks": [ ... ] } so that the front end can use the 'feedbacks' key.
+        return Response({"feedbacks": serializer.data})
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+# Endpoint for individual Feedback retrieval/deletion.
+class FeedbackDetailView(generics.RetrieveDestroyAPIView):
+    queryset = Feedback.objects.all()
+    serializer_class = FeedbackSerializer
+    permission_classes = [IsAuthenticated]
+
+# Admin endpoint: List all saved meal plans across users.
+class AdminMealPlanView(generics.ListAPIView):
+    queryset = MealPlan.objects.all().order_by('-created_at')
+    serializer_class = MealPlanSerializer
+    permission_classes = [AdminPermission]     

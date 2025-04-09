@@ -139,3 +139,14 @@ class MealPlan(models.Model):
 
     def __str__(self):
         return f"Meal Plan for {self.user.username} created at {self.created_at}"
+    
+
+class Feedback(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='feedbacks')
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    # New field to allow threaded replies:
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE)
+    
+    def __str__(self):
+        return f"Feedback from {self.user.username} at {self.created_at}"
