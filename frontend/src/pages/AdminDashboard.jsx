@@ -133,12 +133,8 @@ function AdminDashboard() {
             <p>No users found.</p>
           ) : (
             <table className="table-fixed w-full bg-gray-800">
-              <colgroup>
-                <col className="w-2/12" /> {/* ID */}
-                <col className="w-6/12" /> {/* Username */}
-                <col className="w-2/12" /> {/* Admin */}
-                <col className="w-2/12" /> {/* Actions */}
-              </colgroup>
+              <colgroup><col className="w-2/12" /><col className="w-6/12" /><col className="w-2/12" /><col className="w-2/12" /></colgroup>
+
               <thead>
                 <tr>
                   <th className="px-4 py-2">ID</th>
