@@ -1,4 +1,4 @@
-# vitaforge/backend/api/admin_views.py
+# api/admin_views.py
 from rest_framework.permissions import BasePermission
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -16,9 +16,17 @@ class AdminDashboardView(APIView):
     permission_classes = [AdminPermission]
 
     def get(self, request):
-        # List all registered users for the admin dashboard.
-        users = User.objects.all().values("id", "username", "email", "is_staff", "is_superuser")
-        return Response({"users": list(users)}, status=status.HTTP_200_OK)
+        # Return fields needed in the React table: id, username, email, etc.
+        users_qs = list(
+            User.objects.all().values(
+                "id",         # The real user ID
+                "username",   # e.g. "john_doe"
+                "email",      # e.g. "john@example.com"
+                "is_staff",
+                "is_superuser"
+            )
+        )
+        return Response({"users": users_qs}, status=status.HTTP_200_OK)
 
 class DeleteUserView(APIView):
     permission_classes = [AdminPermission]
@@ -26,7 +34,7 @@ class DeleteUserView(APIView):
     def delete(self, request, user_id):
         try:
             user = User.objects.get(pk=user_id)
-            # Prevent an admin from deleting their own account.
+            # Prevent an admin from deleting their own account
             if user.id == request.user.id:
                 return Response({"error": "Admin cannot delete self."}, status=status.HTTP_400_BAD_REQUEST)
             user.delete()

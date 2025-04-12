@@ -10,6 +10,9 @@ function AdminDashboard() {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Holds the currently viewed plan for our modal
+  const [viewingPlan, setViewingPlan] = useState(null);
+
   // Function to fetch feedback from the backend.
   const fetchFeedbacks = async () => {
     try {
@@ -43,7 +46,12 @@ function AdminDashboard() {
     fetchData();
   }, []);
 
-  // Delete functions for users and meal plans remain unchanged.
+  // Helper to format ID as 6 digits
+  function formatID(num) {
+    return String(num).padStart(6, "0");
+  }
+
+  // Delete user
   const handleDeleteUser = async (userId) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
@@ -57,6 +65,7 @@ function AdminDashboard() {
     }
   };
 
+  // Delete meal plan
   const handleDeleteMealPlan = async (planId) => {
     if (window.confirm("Are you sure you want to delete this meal plan?")) {
       try {
@@ -71,8 +80,7 @@ function AdminDashboard() {
   };
 
   // Delete feedback using its DELETE endpoint.
-  // Note: This function is passed to FeedbackThread which only shows delete
-  // for items authored by the admin.
+  // We'll pass this to FeedbackThread so the admin can delete feedback.
   const handleDeleteFeedback = async (feedbackId) => {
     if (window.confirm("Are you sure you want to delete this reply?")) {
       try {
@@ -107,11 +115,6 @@ function AdminDashboard() {
         <div className="navbar-end">
           <ul className="menu menu-horizontal p-0">
             <li>
-              <Link to="/settings" className="text-white">
-                Settings
-              </Link>
-            </li>
-            <li>
               <Link to="/logout" className="text-white">
                 Logout
               </Link>
@@ -129,12 +132,17 @@ function AdminDashboard() {
           {users.length === 0 ? (
             <p>No users found.</p>
           ) : (
-            <table className="table-auto w-full bg-gray-800">
+            <table className="table-fixed w-full bg-gray-800">
+              <colgroup>
+                <col className="w-2/12" /> {/* ID */}
+                <col className="w-6/12" /> {/* Username */}
+                <col className="w-2/12" /> {/* Admin */}
+                <col className="w-2/12" /> {/* Actions */}
+              </colgroup>
               <thead>
                 <tr>
                   <th className="px-4 py-2">ID</th>
                   <th className="px-4 py-2">Username</th>
-                  <th className="px-4 py-2">Email</th>
                   <th className="px-4 py-2">Admin</th>
                   <th className="px-4 py-2">Actions</th>
                 </tr>
@@ -142,9 +150,8 @@ function AdminDashboard() {
               <tbody>
                 {users.map((user) => (
                   <tr key={user.id} className="border-t border-gray-700">
-                    <td className="px-4 py-2">{user.id}</td>
+                    <td className="px-4 py-2">{formatID(user.id)}</td>
                     <td className="px-4 py-2">{user.username}</td>
-                    <td className="px-4 py-2">{user.email}</td>
                     <td className="px-4 py-2">
                       {user.is_staff ? "Yes" : "No"}
                     </td>
@@ -152,6 +159,8 @@ function AdminDashboard() {
                       <button
                         onClick={() => handleDeleteUser(user.id)}
                         className="btn btn-error btn-sm"
+                        // Disable if user is an admin
+                        disabled={user.is_staff}
                       >
                         Delete
                       </button>
@@ -189,36 +198,81 @@ function AdminDashboard() {
             <p>No saved meal plans available.</p>
           ) : (
             <div className="space-y-4">
-              {mealPlans.map((plan) => (
-                <div
-                  key={plan.id}
-                  className="border p-4 rounded bg-gray-800 border-gray-700"
-                >
-                  <p>
-                    <strong>User:</strong>{" "}
-                    {plan.user_name || "Unknown"}
-                  </p>
-                  <div className="mt-2">
-                    <strong>Plan:</strong>
-                    <ul className="ml-4 mt-1">
-                      {Object.entries(plan.plan).map(([food, portion]) => (
-                        <li key={food}>
-                          {food}: {parseFloat(portion).toFixed(1)} g
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <p className="text-sm text-gray-400 mt-2">
-                    <strong>Date:</strong> {plan.created_at}
-                  </p>
-                  <button
-                    onClick={() => handleDeleteMealPlan(plan.id)}
-                    className="btn btn-error btn-sm mt-2"
+              {mealPlans.map((plan) => {
+                // Format date more readably
+                const formattedDate = new Date(
+                  plan.created_at
+                ).toLocaleString();
+
+                return (
+                  <div
+                    key={plan.id}
+                    className="border p-4 rounded bg-gray-800 border-gray-700"
                   >
-                    Delete Meal Plan
-                  </button>
+                    <p>
+                      <strong>User ID:</strong>{" "}
+                      {plan.user_id
+                        ? String(plan.user_id).padStart(6, "0")
+                        : "Unknown"}
+                    </p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      <strong>Date:</strong> {formattedDate}
+                    </p>
+
+                    {/* Show/Hide plan details in a modal */}
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        className="btn btn-info btn-sm"
+                        onClick={() => setViewingPlan(plan)}
+                      >
+                        Show Meal Plan
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Modal for viewing a single plan */}
+          {viewingPlan && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+              {/* Click the backdrop to close */}
+              <div
+                className="absolute inset-0"
+                onClick={() => setViewingPlan(null)}
+              ></div>
+
+              <div className="relative bg-white text-black p-4 rounded shadow max-w-md w-full">
+                <h2 className="text-xl font-bold mb-4">
+                  Meal Plan for User ID:{" "}
+                  {viewingPlan.user_id
+                    ? String(viewingPlan.user_id).padStart(6, "0")
+                    : "Unknown"}
+                </h2>
+                <p className="mb-2 text-sm text-gray-700">
+                  Date: {new Date(viewingPlan.created_at).toLocaleString()}
+                </p>
+
+                {/* Show the plan details */}
+                <div className="p-2 bg-gray-200 rounded">
+                  <ul className="list-disc pl-5 space-y-1">
+                    {Object.entries(viewingPlan.plan).map(([food, portion]) => (
+                      <li key={food}>
+                        {food}: {parseFloat(portion).toFixed(1)} g
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ))}
+
+                {/* Explicit Close button in addition to backdrop */}
+                <button
+                  onClick={() => setViewingPlan(null)}
+                  className="btn btn-error btn-sm mt-4"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -32,6 +32,7 @@ function Recommendations() {
   const condition = queryParams.get("condition") || "";
   const navigate = useNavigate();
 
+  // Fetch recommendations
   const {
     data: recommendations,
     error,
@@ -42,12 +43,14 @@ function Recommendations() {
     staleTime: 1000 * 60 * 5,
   });
 
+  // 2) ALWAYS fetch the latest health profile
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["healthProfile"],
     queryFn: fetchUserProfile,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,              // instantly stale so we always re-fetch
+    refetchOnMount: "always",  // ensures a fresh fetch each time
   });
-
+  
   // State for modal (food details)
   const [selectedFoodModal, setSelectedFoodModal] = useState(null);
   const closeModal = () => setSelectedFoodModal(null);
@@ -57,7 +60,7 @@ function Recommendations() {
   // Ref to manage single click timer (to differentiate from double click)
   const clickTimer = useRef(null);
 
-  // Toggle food selection: if already selected, remove it; otherwise, add it
+  // Toggle food selection
   const toggleSelection = (food) => {
     setSelectedFoods((prev) => {
       const exists = prev.find((item) => item.food_id === food.food_id);
@@ -69,7 +72,7 @@ function Recommendations() {
     });
   };
 
-  // Single click handler (debounced)
+  // Single-click (debounced)
   const handleClick = (food) => {
     if (clickTimer.current) {
       clearTimeout(clickTimer.current);
@@ -77,10 +80,10 @@ function Recommendations() {
     clickTimer.current = setTimeout(() => {
       toggleSelection(food);
       clickTimer.current = null;
-    }, 200); // 200ms delay to differentiate from double click
+    }, 200);
   };
 
-  // Double click handler cancels single-click timer and opens modal
+  // Double-click opens modal
   const handleDoubleClick = (food) => {
     if (clickTimer.current) {
       clearTimeout(clickTimer.current);
@@ -103,12 +106,12 @@ function Recommendations() {
     }
   };
 
-  // Define colors for interpolation (using light shades)
-  const pureGreen = [16, 185, 129]; // bright green (Tailwind green-500)
-  const midColor = [234, 179, 8]; // bright yellow (Tailwind yellow-500)
-  const pureRed = [239, 68, 68]; // bright red (Tailwind red-500)
+  // Define colors for interpolation
+  const pureGreen = [16, 185, 129]; // bright green
+  const midColor = [234, 179, 8];   // bright yellow
+  const pureRed = [239, 68, 68];    // bright red
 
-  // Compute background color based on index
+  // Compute background color based on position
   const getCardBackground = (index, total) => {
     if (total === 1) return `rgba(${pureGreen.join(",")}, 0.8)`;
     const mid = Math.floor(total / 2);
@@ -123,7 +126,7 @@ function Recommendations() {
     return `rgba(${color.join(",")}, 0.8)`;
   };
 
-  // Function to "create meals" using the selected food array
+  // "Create Meals" for the selected foods
   const handleCreateMeals = async () => {
     try {
       const foodIds = selectedFoods.map((food) => food.food_id);
@@ -134,18 +137,44 @@ function Recommendations() {
         food_ids: foodIds,
       });
       console.log("ML Preprocessing Response:", response.data);
-      // Navigate to the new MealPlanResults page with the ML response data passed in state
       navigate("/meal-plan-results", { state: response.data });
     } catch (error) {
       console.error("Error in ML Preprocessing:", error);
     }
   };
 
-  if (isLoading) return <div>Loading recommendations...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  // Handle loading/error states
+  if (isLoading) {
+    return <div>Loading recommendations...</div>;
+  }
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
 
-  // 'recommendations.recommended_foods' is assumed to be grouped by main category from the backend.
+  // The data is structured as { recommended_foods: { Carbs: [...], Protein: [...], etc. } }
   const categories = Object.keys(recommendations.recommended_foods);
+
+  // ------------------------------------------
+  //   ADD: min–max scaling to map scores => 1..100
+  // ------------------------------------------
+  // Flatten all foods to find min & max
+  const allFoods = categories.flatMap(
+    (cat) => recommendations.recommended_foods[cat]
+  );
+  const scores = allFoods.map((f) => f.score);
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+
+  // Function to scale original to [1..100]
+  function scaleScore(original) {
+    // fallback if minScore == maxScore or array is empty
+    if (minScore === maxScore) {
+      return 50;
+    }
+    return (
+      1 + ((original - minScore) * 99) / (maxScore - minScore)
+    );
+  }
 
   return (
     <div>
@@ -187,30 +216,44 @@ function Recommendations() {
           Food Recommendations for {getGoalText(goal)}
         </h1>
         <br />
+
         {profileLoading ? (
           <p className="mb-4 text-lg text-green-600 font-semibold">
             Your Health Condition(s): Loading...
           </p>
         ) : profile ? (
-          <div className="mb-4 flex items-center space-x-3">
-            <span className="text-lg font-semibold text-green-700">
-              Your Health Condition(s):
-            </span>
-            <span className="px-3 py-1 bg-green-100 text-green-800 rounded text-lg font-bold">
-              {profile.health_conditions || "None"}
-            </span>
-          </div>
+          <>
+            {/* Health Conditions */}
+            <div className="mb-4 flex items-center space-x-3">
+              <span className="text-lg font-semibold text-green-700">
+                Your Health Condition(s):
+              </span>
+              <span className="px-3 py-1 bg-green-100 text-green-800 rounded text-lg font-bold">
+                {profile.health_conditions || "None"}
+              </span>
+            </div>
+
+            {/* Dietary Preference */}
+            <div className="mb-6 flex items-center space-x-3">
+              <span className="text-lg font-semibold text-blue-700">
+                Your Dietary Preference:
+              </span>
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-lg font-bold">
+                {profile.dietary_preference || "Not Specified"}
+              </span>
+            </div>
+          </>
         ) : null}
+
         <p className="mb-6 text-base text-gray-600">
-          The score displayed as a superscript next to each food name represents
-          a penalty-based measure indicating how well the food meets your
-          nutrient targets. A higher (less negative) score means a closer match
-          to the recommended nutrient limits.
+          The score displayed as a superscript next to each food name is mapped
+          from 1 to 100, indicating how closely it matches your nutrient targets
+          (higher = better).
         </p>
 
         {/* Food Cards Section per Category */}
         {categories.map((category) => {
-          // Sort foods by score descending
+          // Sort foods by raw score descending
           const foods = [...recommendations.recommended_foods[category]].sort(
             (a, b) => b.score - a.score
           );
@@ -223,6 +266,10 @@ function Recommendations() {
                   const isSelected = selectedFoods.find(
                     (item) => item.food_id === food.food_id
                   );
+
+                  // Convert raw score => scaled 1..100
+                  const scaledScore = scaleScore(food.score);
+
                   return (
                     <div
                       key={food.food_id}
@@ -238,7 +285,8 @@ function Recommendations() {
                       <h3 className="text-xl font-semibold relative">
                         {food.name}
                         <sup className="absolute top-0 right-0 bg-green-50 text-xs text-green-700 rounded-full px-1">
-                          {food.score}
+                          {/* Show the scaled integer */}
+                          {scaledScore.toFixed(0)}
                         </sup>
                       </h3>
                     </div>
@@ -248,6 +296,7 @@ function Recommendations() {
             </div>
           );
         })}
+
         {/* Create Meals Button */}
         <div className="flex justify-center mt-10">
           <button
@@ -304,7 +353,8 @@ function Recommendations() {
                   {selectedFoodModal.total_free_sugars_g} g
                 </div>
                 <div>
-                  <strong>Fiber:</strong> {selectedFoodModal.dietary_fibre_g} g
+                  <strong>Fiber:</strong>{" "}
+                  {selectedFoodModal.dietary_fibre_g} g
                 </div>
                 <div>
                   <strong>Sat. Fat:</strong>{" "}
@@ -318,8 +368,7 @@ function Recommendations() {
                   <strong>Sodium:</strong> {selectedFoodModal.sodium_mg} mg
                 </div>
                 <div>
-                  <strong>Potassium:</strong> {selectedFoodModal.potassium_mg}{" "}
-                  mg
+                  <strong>Potassium:</strong> {selectedFoodModal.potassium_mg} mg
                 </div>
                 <div>
                   <strong>Linoleic:</strong> {selectedFoodModal.linoleic_mg} mg
@@ -401,20 +450,18 @@ function Recommendations() {
                   <strong>Iron:</strong> {selectedFoodModal.iron_mg} mg
                 </div>
                 <div>
-                  <strong>Magnesium:</strong> {selectedFoodModal.magnesium_mg}{" "}
-                  mg
+                  <strong>Magnesium:</strong> {selectedFoodModal.magnesium_mg} mg
                 </div>
                 <div>
-                  <strong>Manganese:</strong> {selectedFoodModal.manganese_mg}{" "}
-                  mg
+                  <strong>Manganese:</strong> {selectedFoodModal.manganese_mg} mg
                 </div>
                 <div>
-                  <strong>Molybdenum:</strong> {selectedFoodModal.molybdenum_mg}{" "}
-                  mg
+                  <strong>Molybdenum:</strong>{" "}
+                  {selectedFoodModal.molybdenum_mg} mg
                 </div>
                 <div>
-                  <strong>Phosphorus:</strong> {selectedFoodModal.phophorous_mg}{" "}
-                  mg
+                  <strong>Phosphorus:</strong>{" "}
+                  {selectedFoodModal.phophorous_mg} mg
                 </div>
                 <div>
                   <strong>Selenium:</strong> {selectedFoodModal.selenium_ug} µg

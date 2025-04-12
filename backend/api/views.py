@@ -204,22 +204,26 @@ class RecommendationView(APIView):
         selected_region = request.GET.get("region", None)
         condition_param = request.GET.get("condition")
 
+        # 1) Retrieve the user's profile, or error if missing
         try:
             profile = HealthProfile.objects.get(user=request.user)
         except HealthProfile.DoesNotExist:
             return Response({"error": "Health profile not found. Please set up your health profile."},
                             status=status.HTTP_404_NOT_FOUND)
 
+        # 2) Parse health conditions
         if condition_param:
             conditions = [condition_param.strip().lower()]
         else:
             conditions = ([cond.strip().lower() for cond in profile.health_conditions.split(",")]
                           if profile.health_conditions else [])
 
+        # Basic user info
         age = profile.age
         height_cm = profile.height
         weight_kg = profile.weight
 
+        # 3) Build constraints based on conditions
         daily_kcal = compute_calorie_target(age, height_cm, weight_kg, goal)
         diabetic_limits = get_diabetic_limits(daily_kcal)
         hypertension_limits = get_hypertension_limits(daily_kcal)
@@ -241,42 +245,58 @@ class RecommendationView(APIView):
             constraints_list.append(HighCholesterolConstraints(high_cholesterol_limits, meals_per_day=3))
         if "none" in conditions or not conditions:
             constraints_list.append(GeneralConstraints(general_limits, meals_per_day=3))
+
+        # If no recognized conditions, fallback to "NoConstraints"
         if not constraints_list:
             class NoConstraints:
                 def food_score(self, food):
                     return 0
             constraints_list.append(NoConstraints())
+
         composite = CompositeConstraints(constraints_list)
 
+        # 4) Filter FoodItems by region & dietary preference
+        #    Build a dict of filter args for FoodItem.objects.filter(**filters)
+        filters = {}
         if selected_region:
-            all_foods = FoodItem.objects.filter(region__in=[selected_region, "Both"])
-        else:
-            all_foods = FoodItem.objects.all()
+            filters["region__in"] = [selected_region, "Both"]
 
-        # Calculate a score for each food using the composite constraints.
+        # Check the user's dietary preference
+        # Options per your models: 'vegan', 'vegetarian', 'gluten_free', 'non_vegetarian'
+        diet_pref = profile.dietary_preference
+        if diet_pref == "vegan":
+            filters["vegan"] = True
+        elif diet_pref == "vegetarian":
+            filters["vegetarian"] = True
+        elif diet_pref == "gluten_free":
+            filters["gluten_free"] = True
+        # if 'non_vegetarian', we do NOT filter anything out
+
+        all_foods = FoodItem.objects.filter(**filters)
+
+        # 5) Score each food using the constraints
         scored_list = [(food, composite.food_score(food)) for food in all_foods]
         scored_list.sort(key=lambda x: x[1], reverse=True)
 
-        # New helper function to group foods by a distinct macronutrient category.
+        # 6) Helper function to group foods by main macro category
         def get_macro_group(food):
-            # Use the tag from the database, which we lowercased already.
-            tag = food.tags.lower() if food.tags else "others"
-            # First, check for explicit tags.
+            # Use the 'tag' column if present, else fallback on macros
+            tag = (food.tags or "").lower()
             if "fruit" in tag:
                 return "Fruit"
             elif "vegetable" in tag or "leafy" in tag:
                 return "Vegetable"
-            elif "grains" in tag or "cereal" in tag or "rice" in tag or "bread" in tag:
+            elif any(x in tag for x in ["grains","cereal","rice","bread"]):
                 return "Carbs"
-            elif "legume" in tag or "poultry" in tag or "fish" in tag or "red meat" in tag or "dairy" in tag:
+            elif any(x in tag for x in ["legume","poultry","fish","red meat","dairy"]):
                 return "Protein"
-            elif "nut" in tag or "peanut" in tag or "oil" in tag or "butter" in tag:
+            elif any(x in tag for x in ["nut","peanut","oil","butter"]):
                 return "Fat"
             else:
-                # Fallback: decide based on the highest nutrient value
-                protein = food.protein_g if food.protein_g is not None else 0
-                carbs = food.carbs_g if food.carbs_g is not None else (food.total_available_cho_g or 0)
-                fat = food.total_fat_g if food.total_fat_g is not None else 0
+                # Fallback: compare the macros
+                protein = food.protein_g or 0
+                carbs = food.carbs_g or (food.total_available_cho_g or 0)
+                fat = food.total_fat_g or 0
                 macros = {"Protein": protein, "Carbs": carbs, "Fat": fat}
                 primary = max(macros, key=macros.get)
                 return primary if macros[primary] != 0 else "Others"
@@ -293,8 +313,11 @@ class RecommendationView(APIView):
                 "carbs": food.carbs_g if food.carbs_g is not None else (food.total_available_cho_g or "N/A"),
                 "total_free_sugars_g": food.total_free_sugars_g if food.total_free_sugars_g is not None else "N/A",
                 "dietary_fibre_g": food.dietary_fibre_g if food.dietary_fibre_g is not None else "N/A",
-                "total_saturated_fatty_acids_g": (food.total_saturated_fatty_acids_mg / 1000.0
-                                                  if food.total_saturated_fatty_acids_mg is not None else "N/A"),
+                "total_saturated_fatty_acids_g": (
+                    food.total_saturated_fatty_acids_mg / 1000.0
+                    if food.total_saturated_fatty_acids_mg is not None
+                    else "N/A"
+                ),
                 "cholesterol_mg": food.cholesterol_mg if food.cholesterol_mg is not None else "N/A",
                 "sodium_mg": food.sodium_mg if food.sodium_mg is not None else "N/A",
                 "potassium_mg": food.potassium_mg if food.potassium_mg is not None else "N/A",

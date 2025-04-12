@@ -1,6 +1,7 @@
 // src/pages/EditProfile.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query"; // <-- Import
 import api from "../api";
 
 function EditProfile() {
@@ -9,7 +10,10 @@ function EditProfile() {
   const [healthConditions, setHealthConditions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch current profile details on mount and ensure health_conditions is an array
+  // We’ll use this to invalidate the "healthProfile" query after saving
+  const queryClient = useQueryClient();
+
+  // Fetch current profile details on mount
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -38,12 +42,10 @@ function EditProfile() {
   const handleCheckboxChange = (e) => {
     const { value, checked } = e.target;
     setHealthConditions((prev) => {
-      // Ensure we work with an array
       const current = Array.isArray(prev) ? prev : [];
       if (value === "none") {
         return checked ? ["none"] : current.filter((cond) => cond !== "none");
       } else {
-        // Remove "none" if present
         let updated = current.filter((cond) => cond !== "none");
         if (checked) {
           if (!updated.includes(value)) {
@@ -59,6 +61,7 @@ function EditProfile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     // Convert the health conditions array to a comma-separated string
     const payload = {
       dietary_preference: dietaryPreference,
@@ -70,6 +73,10 @@ function EditProfile() {
     try {
       await api.patch("/api/health-profile/detail/", payload);
       alert("Profile updated successfully");
+
+      // Invalidate the local "healthProfile" cache so it re-fetches fresh data next time
+      queryClient.invalidateQueries(["healthProfile"]);
+
       navigate("/profile");
     } catch (error) {
       console.error("Error updating profile:", error);
