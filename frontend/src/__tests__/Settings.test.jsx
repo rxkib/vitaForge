@@ -5,8 +5,12 @@ import userEvent from "@testing-library/user-event";
 import Settings from "../pages/Settings";
 import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
-import api from "../api";
 import { AuthContext } from "../context/AuthContext";
+
+// Suppress console.log output during tests.
+beforeAll(() => {
+  vi.spyOn(console, "log").mockImplementation(() => {});
+});
 
 // Dummy auth state.
 const dummyAuthState = { user: { username: "john_doe" } };
@@ -51,9 +55,7 @@ describe("Settings Component", () => {
     await waitFor(() => {
       expect(screen.getByText(/account settings/i)).toBeInTheDocument();
       expect(screen.getAllByText(/delete account/i).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/delete meal plan/i).length).toBeGreaterThan(
-        0
-      );
+      expect(screen.getAllByText(/delete meal plan/i).length).toBeGreaterThan(0);
       expect(screen.getByText(/data & privacy/i)).toBeInTheDocument();
       expect(screen.getByText(/about/i)).toBeInTheDocument();
       expect(screen.getByText(/help & feedback/i)).toBeInTheDocument();
@@ -72,9 +74,7 @@ describe("Settings Component", () => {
       </AuthContext.Provider>
     );
 
-    const feedbackTextarea = screen.getByPlaceholderText(
-      /enter your complaint or feedback/i
-    );
+    const feedbackTextarea = screen.getByPlaceholderText(/enter your complaint or feedback/i);
     await userEvent.type(feedbackTextarea, "Test feedback message");
     const sendButton = screen.getByRole("button", { name: /send feedback/i });
     await userEvent.click(sendButton);
@@ -97,9 +97,7 @@ describe("Settings Component", () => {
         </MemoryRouter>
       </AuthContext.Provider>
     );
-    const deleteAccountButton = screen.getByRole("button", {
-      name: /delete account/i,
-    });
+    const deleteAccountButton = screen.getByRole("button", { name: /delete account/i });
     await userEvent.click(deleteAccountButton);
 
     expect(window.confirm).toHaveBeenCalled();
@@ -120,9 +118,7 @@ describe("Settings Component", () => {
         </MemoryRouter>
       </AuthContext.Provider>
     );
-    const deleteMealPlanButton = screen.getByRole("button", {
-      name: /delete meal plan/i,
-    });
+    const deleteMealPlanButton = screen.getByRole("button", { name: /delete meal plan/i });
     await userEvent.click(deleteMealPlanButton);
 
     expect(window.confirm).toHaveBeenCalled();

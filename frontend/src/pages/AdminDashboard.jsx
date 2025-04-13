@@ -133,7 +133,12 @@ function AdminDashboard() {
             <p>No users found.</p>
           ) : (
             <table className="table-fixed w-full bg-gray-800">
-              <colgroup><col className="w-2/12" /><col className="w-6/12" /><col className="w-2/12" /><col className="w-2/12" /></colgroup>
+              <colgroup>
+                <col className="w-2/12" />
+                <col className="w-6/12" />
+                <col className="w-2/12" />
+                <col className="w-2/12" />
+              </colgroup>
 
               <thead>
                 <tr>
@@ -239,20 +244,20 @@ function AdminDashboard() {
                 onClick={() => setViewingPlan(null)}
               ></div>
 
-              <div className="relative bg-white text-black p-4 rounded shadow max-w-md w-full">
-                <h2 className="text-xl font-bold mb-4">
+              <div className="relative bg-gray-900 text-white p-4 rounded shadow max-w-md w-full">
+                <h2 className="text-2xl text-white font-bold mb-4">
                   Meal Plan for User ID:{" "}
                   {viewingPlan.user_id
                     ? String(viewingPlan.user_id).padStart(6, "0")
                     : "Unknown"}
                 </h2>
-                <p className="mb-2 text-sm text-gray-700">
+                <p className="mb-2 text-m text-white">
                   Date: {new Date(viewingPlan.created_at).toLocaleString()}
                 </p>
 
                 {/* Show the plan details */}
-                <div className="p-2 bg-gray-200 rounded">
-                  <ul className="list-disc pl-5 space-y-1">
+                <div className="p-3 bg-gray-800 text-white text-m rounded border border-gray-700">
+                  <ul className="list-disc pl-6 space-y-1 text-base leading-relaxed">
                     {Object.entries(viewingPlan.plan).map(([food, portion]) => (
                       <li key={food}>
                         {food}: {parseFloat(portion).toFixed(1)} g

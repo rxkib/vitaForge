@@ -1,4 +1,10 @@
 // src/__tests__/AuthForm.test.jsx
+
+// Suppress console.log output during tests.
+beforeAll(() => {
+  vi.spyOn(console, "log").mockImplementation(() => {});
+});
+
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -11,10 +17,7 @@ import { ACCESS_TOKEN, REFRESH_TOKEN } from '../constants';
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
+  return { ...actual, useNavigate: () => mockNavigate };
 });
 
 // --- Partially mock the API module with a default export ---
@@ -25,7 +28,6 @@ vi.mock('../api', () => {
     },
   };
 });
-// Import the api mock.
 import api from '../api';
 
 describe('AuthForm Component', () => {
@@ -82,7 +84,7 @@ describe('AuthForm Component', () => {
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/');
     });
-    // Verify tokens are stored in localStorage using the imported constants.
+    // Verify tokens are stored in localStorage.
     expect(localStorage.getItem(ACCESS_TOKEN)).toBe('access-token');
     expect(localStorage.getItem(REFRESH_TOKEN)).toBe('refresh-token');
   });

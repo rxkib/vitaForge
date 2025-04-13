@@ -405,6 +405,8 @@ function Exercises() {
               onClick={closeModal}
               className="absolute top-4 right-4 z-30 text-white transition-colors"
               style={{ fontSize: "1.5rem" }}
+              aria-label="Close Modal"
+              data-testid="close-modal" // <-- Add this attribute
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -421,6 +423,7 @@ function Exercises() {
                 />
               </svg>
             </button>
+
             {/* Scrollable Modal Content */}
             <div className="overflow-y-auto max-h-[80vh]">
               {/* Modal Header with Enhanced Gradient */}

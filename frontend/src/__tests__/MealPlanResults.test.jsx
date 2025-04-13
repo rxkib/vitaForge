@@ -1,4 +1,10 @@
 // src/__tests__/MealPlanResults.test.jsx
+
+// Suppress console.log output during tests.
+beforeAll(() => {
+  vi.spyOn(console, "log").mockImplementation(() => {});
+});
+
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -7,10 +13,11 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
 import api from '../api';
+import { AuthContext } from '../context/AuthContext';
 
+// Dummy state passed to MealPlanResults
 const dummyState = {
   daily_targets: { calories: 2000, carbs: 250, protein: 150, fat: 70, fiber: 30 },
-  // The component sends the meal plan under the key "plan"
   meal_plan: { Breakfast: 100, Lunch: 150, Dinner: 200 },
 };
 
