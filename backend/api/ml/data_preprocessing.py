@@ -37,8 +37,10 @@ def get_food_category_data(food_ids=None):
     if food_ids is not None:
         qs = qs.filter(id__in=food_ids)
     data = []
+    # Iterate over the FoodItems
     for food in qs:
         if food.tags:
+            # Assume tags are comma‑separated; split them and lower-case.
             tags = [t.strip().lower() for t in food.tags.split(",")]
             category = None
             for t in tags:
@@ -68,15 +70,22 @@ def get_food_macro_data_with_names(food_ids=None):
         'protein_g', 'total_fat_g', 'carbs_g', 'total_available_cho_g', 
         'energy_kj', 'dietary_fibre_g', 'name', 'tags'
     )
-    df = pd.DataFrame(list(qs_data))
+    data_list = list(qs_data)
+    df = pd.DataFrame(data_list)
+    # If the DataFrame is empty, return empty outputs.
+    if df.empty:
+        return np.empty((0, 5)), [], []
     
     # Ensure the critical columns exist; if not, create them with default 0.
     for col in ['protein_g', 'total_fat_g', 'carbs_g', 'total_available_cho_g', 'energy_kj', 'dietary_fibre_g']:
         if col not in df.columns:
             df[col] = 0
 
-    # For energy_kj, fill missing values with the mean.
-    df['energy_kj'] = df['energy_kj'].fillna(df['energy_kj'].mean())
+    # For energy_kj, fill missing values with the column mean; if all are missing, use 0.
+    if df['energy_kj'].isnull().all():
+        df['energy_kj'] = 0
+    else:
+        df['energy_kj'] = df['energy_kj'].fillna(df['energy_kj'].mean())
     
     # Fill missing values for protein_g and total_fat_g with 0.
     df['protein_g'] = df['protein_g'].fillna(0)
@@ -100,13 +109,13 @@ def get_food_macro_data_with_names(food_ids=None):
     df['fiber'] = df['dietary_fibre_g'].fillna(0) / 100.0
 
     # Keep the full tag string (lowercased) for later diversity matching.
-    df['category'] = df['tags'].fillna("others").str.lower()
+    # To avoid KeyError when 'tags' is missing, use get with a default.
+    df['category'] = df.get('tags', pd.Series(["others"]*len(df))).fillna("others").str.lower()
     
     food_data = df[['protein', 'fat', 'carbs', 'cal_per_g', 'fiber']].to_numpy()
     names = list(df['name'])
     categories = list(df['category'])
     return food_data, names, categories
-
 
 def scale_nutritional_data(data_array):
     scaler = StandardScaler()

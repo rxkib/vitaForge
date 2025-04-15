@@ -61,6 +61,12 @@ class UserMeView(APIView):
         return Response({"message": "User account deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 
+class CreateUserView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [AllowAny]
+
+
 class WeightHistoryView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
@@ -188,12 +194,6 @@ class HealthProfileDetail(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     def get_object(self):
         return HealthProfile.objects.get(user=self.request.user)
-
-
-class CreateUserView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [AllowAny]
 
 
 class RecommendationView(APIView):
