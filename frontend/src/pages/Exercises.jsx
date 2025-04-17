@@ -297,6 +297,15 @@ function Exercises() {
             <p className="text-red-500 mt-4">Error: {error.message}</p>
           )}
 
+          {!isLoading && !isError && exercises && exercises.length === 0 && (
+            <p className="mt-10 text-center text-white">
+              <br />
+              <br />
+              <br />
+              Sorry, no exercise available with these constraints.
+            </p>
+          )}
+
           {/* Filtered Exercises List */}
           {exercises && (
             <div className="mt-8 space-y-6">
