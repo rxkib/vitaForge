@@ -4,7 +4,8 @@ import WeightCard from "../components/WeightCard";
 import BMIChart from "../components/BMIChart";
 import api from "../api";
 import WorkoutCalendar from "../components/WorkoutCalendar";
-import exerciseImg from "../assets/exercise.png";
+import { HelpCircle } from "lucide-react";
+import { Mail } from "lucide-react";
 
 function Home() {
   const [profile, setProfile] = useState(null);
@@ -126,9 +127,36 @@ function Home() {
             >
               Exercises
             </h2>
+            <div
+              className="ml-2 tooltip tooltip-top tooltip-warning text-xl"
+              data-tip="This page leads to our own hosted MuscleWiki API for exercises."
+            >
+              <HelpCircle className="w-5 h-5 text-white opacity-80 hover:opacity-100 cursor-pointer" />
+            </div>
           </div>
         </Link>
-      </div>
+      </div>{" "}
+      <br />
+      {/* Footer */}
+      <footer className="footer footer-center bg-base-100 text-base-content p-10">
+        <div className="flex flex-col items-center">
+          <img
+            src="/logo.png"
+            alt="vitaForge logo"
+            className="w-16 h-16 mb-2"
+          />
+          <p className="mb-0">
+            © {new Date().getFullYear()} vitaForge™. All rights reserved.
+          </p>
+          <a
+            href="mailto:rakibsaysxo@gmail.com"
+            className="flex items-center space-x-2 link link-hover text-sm"
+          >
+            <Mail className="w-4 h-4" />
+            <span>rakibsaysxo@gmail.com</span>
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }

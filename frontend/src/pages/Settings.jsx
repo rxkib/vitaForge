@@ -3,6 +3,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api";
 import { AuthContext } from "../context/AuthContext";
+import { HelpCircle } from "lucide-react";
 
 function Settings() {
   const navigate = useNavigate();
@@ -30,7 +31,9 @@ function Settings() {
 
   // Delete meal plan function (unchanged)
   const handleDeleteMealPlan = async () => {
-    if (window.confirm("Are you sure you want to delete your saved meal plan?")) {
+    if (
+      window.confirm("Are you sure you want to delete your saved meal plan?")
+    ) {
       try {
         await api.delete("/api/meal-plan/");
         alert("Meal plan deleted successfully");
@@ -96,7 +99,10 @@ function Settings() {
       if (replyText.trim() === "") return;
       try {
         // Post reply with the parent field set to the current feedback's id
-        await api.post("/api/feedback/", { message: replyText, parent: feedback.id });
+        await api.post("/api/feedback/", {
+          message: replyText,
+          parent: feedback.id,
+        });
         setReplyText("");
         setShowReplyForm(false);
         refreshCases();
@@ -136,7 +142,10 @@ function Settings() {
             </button>
             {/* Allow deletion if the message belongs to the user */}
             {feedback.user === authState.user.username && (
-              <button className="btn btn-sm btn-error ml-2" onClick={handleDelete}>
+              <button
+                className="btn btn-sm btn-error ml-2"
+                onClick={handleDelete}
+              >
                 Delete
               </button>
             )}
@@ -160,7 +169,11 @@ function Settings() {
         {showReplies && feedback.replies && feedback.replies.length > 0 && (
           <div className="ml-4 border-l pl-2 mt-2">
             {feedback.replies.map((reply) => (
-              <FeedbackCase key={reply.id} feedback={reply} refreshCases={refreshCases} />
+              <FeedbackCase
+                key={reply.id}
+                feedback={reply}
+                refreshCases={refreshCases}
+              />
             ))}
           </div>
         )}
@@ -226,8 +239,8 @@ function Settings() {
               Delete Account
             </h2>
             <p className="mb-4 text-gray-400">
-              Warning: Deleting your account is irreversible. All your data
-              will be permanently removed.
+              Warning: Deleting your account is irreversible. All your data will
+              be permanently removed.
             </p>
             <button onClick={handleDeleteAccount} className="btn btn-error">
               Delete Account
@@ -240,7 +253,8 @@ function Settings() {
               Delete Meal Plan
             </h2>
             <p className="mb-4 text-gray-400">
-              If you have a saved meal plan, you can delete it and generate a new one.
+              If you have a saved meal plan, you can delete it and generate a
+              new one.
             </p>
             <button onClick={handleDeleteMealPlan} className="btn btn-warning">
               Delete Meal Plan
@@ -254,7 +268,8 @@ function Settings() {
             </h2>
             <p className="mb-4 text-gray-400">
               All your data is securely recorded in our database. We adhere to
-              standard data protection practices as expected in a typical fitness app.
+              standard data protection practices as expected in a typical
+              fitness app.
             </p>
           </div>
 
@@ -268,9 +283,17 @@ function Settings() {
 
           {/* Help & Feedback Section */}
           <div className="card bg-gray-800 shadow-md rounded p-6 text-gray-200">
-            <h2 className="text-2xl font-bold mb-4 text-white">
-              Help & Feedback
-            </h2>
+            <div className="flex items-center mb-4">
+              <h2 className="text-2xl font-bold mb-0 text-white">
+                Help & Feedback
+              </h2>
+              <div
+                className="ml-2 tooltip tooltip-warning text-lg"
+                data-tip="To check admin responses, scroll to ‘Your Cases’ below and click ‘Show replies’."
+              >
+                <HelpCircle className="w-5 h-5 text-white cursor-pointer" />
+              </div>
+            </div>
             <textarea
               placeholder="Enter your complaint or feedback..."
               className="textarea textarea-bordered w-full bg-gray-700 text-gray-100"
@@ -285,7 +308,16 @@ function Settings() {
 
           {/* Your Cases Section */}
           <div className="card bg-gray-800 shadow-md rounded p-6 mt-8 text-gray-200">
-            <h2 className="text-2xl font-bold mb-4 text-white">Your Cases</h2>
+            <div className="flex items-center mb-4">
+              <h2 className="text-2xl font-bold mb-0.5 text-white">Your Cases</h2>
+              <div
+                className="ml-2 tooltip tooltip-info text-lg"
+                data-tip="If ‘Show Replies’ doesn’t open anything, it means the admin hasn’t responded yet, please wait."
+              >
+                <HelpCircle className="w-5 h-5 text-white cursor-pointer" />
+              </div>
+            </div>
+
             {userCases.length === 0 ? (
               <p className="text-gray-400">
                 You haven’t submitted any cases yet.
@@ -293,7 +325,11 @@ function Settings() {
             ) : (
               <div className="space-y-4">
                 {userCases.map((fb) => (
-                  <FeedbackCase key={fb.id} feedback={fb} refreshCases={fetchUserCases} />
+                  <FeedbackCase
+                    key={fb.id}
+                    feedback={fb}
+                    refreshCases={fetchUserCases}
+                  />
                 ))}
               </div>
             )}

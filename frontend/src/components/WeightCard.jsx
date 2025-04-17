@@ -57,7 +57,10 @@ function WeightCard() {
       ) : (
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={weights} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <LineChart
+              data={weights}
+              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+            >
               {/* Draw only horizontal grid lines */}
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="date" />
@@ -81,9 +84,17 @@ function WeightCard() {
         </div>
       )}
       {!showForm ? (
-        <button className="btn btn-primary mt-2" onClick={() => setShowForm(true)}>
-          Log New Weight
-        </button>
+        <div
+          className="tooltip tooltip-info text-l"
+          data-tip="Click to enter your current weight and save it to your 7-day history"
+        >
+          <button
+            className="btn btn-primary mt-2"
+            onClick={() => setShowForm(true)}
+          >
+            Log New Weight
+          </button>
+        </div>
       ) : (
         <div className="flex items-center gap-2 mt-2">
           <input

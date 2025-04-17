@@ -85,7 +85,7 @@ function Plans() {
               <h2 className="card-title mx-auto text-3xl font-bold mb-4">
                 What's Your Goal?
               </h2>
-              <p className="text-gray-500 mb-8 leading-relaxed tracking-wide">
+              <p className="text-white text-sm mb-8 leading-relaxed tracking-wide">
                 Choose an option to receive personalized meal plan recommendations.
               </p>
               <div className="flex flex-wrap gap-4 justify-center">
@@ -124,8 +124,8 @@ function Plans() {
               onChange={(e) => setRegion(e.target.value)}
             >
               <option value="">Select Region</option>
-              <option value="EU">EU</option>
-              <option value="SA">SA</option>
+              <option value="EU">Europe</option>
+              <option value="SA">South Asia</option>
             </select>
             <button className="btn btn-primary w-full" onClick={handleContinue}>
               Continue

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import api from "../api";
+import { HelpCircle } from "lucide-react";
 
 function MealPlanResults() {
   const location = useLocation();
@@ -82,9 +83,18 @@ function MealPlanResults() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 flex-grow">
         <section className="mb-8">
-          <h2 className="text-2xl text-green-700 font-semibold mb-4">
-            Daily Targets
-          </h2>
+          <div className="flex items-center mb-4">
+            <h2 className="text-2xl text-green-700 font-semibold">
+              Daily Targets
+            </h2>
+            <div
+              className="ml-2 tooltip tooltip-warning text-lg"
+              data-tip="Calculated from your TDEE (Total Daily Energy Expenditure)."
+            >
+              <HelpCircle className="w-5 h-5 text-green-700 cursor-pointer" />
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
               { label: "Calories", value: daily_targets.calories },
@@ -106,7 +116,16 @@ function MealPlanResults() {
           </div>
         </section>
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Meal Plan</h2>
+          <div className="flex items-center mb-4">
+            <h2 className="text-2xl font-semibold">Meal Plan</h2>
+            <div
+              className="ml-2 tooltip tooltip-right tooltip-warning text-lg"
+              data-tip="Our algorithm may sometimes make mistakes, and these proportions aren’t always perfectly accurate."
+            >
+              <HelpCircle className="w-5 h-5 text-gray-500 hover:text-gray-200 cursor-pointer" />
+            </div>
+          </div>
+
           <div className="mb-6">
             <div className="p-6 bg-white rounded-lg shadow-md border border-green-200">
               <h3 className="text-xl text-green-700 font-bold mb-3">
@@ -128,12 +147,22 @@ function MealPlanResults() {
           {saveStatus && <p className="text-center text-lg">{saveStatus}</p>}
           <br />
           <div className="flex justify-center space-x-4">
-            <button onClick={handleSavePlan} className="btn btn-success">
-              Save Plan
-            </button>
-            <button onClick={handleCreateNewPlan} className="btn btn-warning">
-              Create New Plan
-            </button>
+            <div
+              className="tooltip tooltip-content"
+              data-tip="Saves the plan to the database. Next time you click ‘Plans’, you'll see this stored meal plan."
+            >
+              <button onClick={handleSavePlan} className="btn btn-success">
+                Save Plan
+              </button>
+            </div>
+            <div
+              className="tooltip tooltip-content"
+              data-tip="Discards your current plan and restarts the meal‐planning process from the beginning."
+            >
+              <button onClick={handleCreateNewPlan} className="btn btn-warning">
+                Create New Plan
+              </button>
+            </div>
           </div>
         </section>
       </main>

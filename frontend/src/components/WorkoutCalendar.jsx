@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { HelpCircle } from "lucide-react";
 import api from "../api";
 
 // Helper to pad a number to two digits.
@@ -189,7 +190,18 @@ function WorkoutCalendar({ accountCreated }) {
     <div className="card bg-base-100 shadow-xl p-4 w-full h-full">
       {/* Gradient heading with title + nav */}
       <div className="rounded-md bg-gradient-to-r from-blue-900 to-cyan-600 text-white p-4 mb-4">
-        <h2 className="text-2xl font-bold">Health Calendar</h2>
+        {/* Tooltip at top-right */}
+        <div
+          className="absolute top-8 right-8 tooltip tooltip-left tooltip-content text-lg"
+          data-tip="You may only navigate forward from your registration date. Click any date to view or record that day’s log."
+        >
+          <HelpCircle className="w-6 h-6 text-white opacity-80 hover:opacity-100 cursor-pointer" />
+        </div>
+
+        {/* Centered title */}
+        <div className="flex justify-center mb-2">
+          <h2 className="text-2xl font-bold">Health Calendar</h2>
+        </div>
         {/* Navigation Header */}
         <div className="flex justify-between items-center mt-2">
           <button
@@ -310,10 +322,14 @@ function WorkoutCalendar({ accountCreated }) {
                     <strong>Status:</strong> {recapData.status}
                   </p>
                   <p className="mb-2 text-white">
-                    <strong>Weight:</strong> {recapData.weight} kg
+                    <strong>Weight:</strong>{" "}
+                    {recapData.weight != null
+                      ? `${recapData.weight} kg`
+                      : "Not recorded"}
                   </p>
                   <p className="mb-2 text-white">
-                    <strong>BMI:</strong> {recapData.bmi}
+                    <strong>BMI:</strong>{" "}
+                    {recapData.bmi != null ? recapData.bmi : "Not available"}
                   </p>
                 </>
               )}

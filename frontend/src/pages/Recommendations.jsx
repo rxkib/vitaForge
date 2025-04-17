@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "react-router-dom";
 import api from "../api";
 import { useNavigate } from "react-router-dom";
+import { Info } from "lucide-react";
 
 function useQueryParams() {
   return new URLSearchParams(useLocation().search);
@@ -47,10 +48,10 @@ function Recommendations() {
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["healthProfile"],
     queryFn: fetchUserProfile,
-    staleTime: 0,              // instantly stale so we always re-fetch
-    refetchOnMount: "always",  // ensures a fresh fetch each time
+    staleTime: 0, // instantly stale so we always re-fetch
+    refetchOnMount: "always", // ensures a fresh fetch each time
   });
-  
+
   // State for modal (food details)
   const [selectedFoodModal, setSelectedFoodModal] = useState(null);
   const closeModal = () => setSelectedFoodModal(null);
@@ -108,8 +109,8 @@ function Recommendations() {
 
   // Define colors for interpolation
   const pureGreen = [16, 185, 129]; // bright green
-  const midColor = [234, 179, 8];   // bright yellow
-  const pureRed = [239, 68, 68];    // bright red
+  const midColor = [234, 179, 8]; // bright yellow
+  const pureRed = [239, 68, 68]; // bright red
 
   // Compute background color based on position
   const getCardBackground = (index, total) => {
@@ -171,9 +172,7 @@ function Recommendations() {
     if (minScore === maxScore) {
       return 50;
     }
-    return (
-      1 + ((original - minScore) * 99) / (maxScore - minScore)
-    );
+    return 1 + ((original - minScore) * 99) / (maxScore - minScore);
   }
 
   return (
@@ -226,7 +225,7 @@ function Recommendations() {
             {/* Health Conditions */}
             <div className="mb-4 flex items-center space-x-3">
               <span className="text-lg font-semibold text-green-700">
-                Your Health Condition(s):
+                Your Health Condition:
               </span>
               <span className="px-3 py-1 bg-green-100 text-green-800 rounded text-lg font-bold">
                 {profile.health_conditions || "None"}
@@ -245,11 +244,23 @@ function Recommendations() {
           </>
         ) : null}
 
-        <p className="mb-6 text-base text-gray-600">
-          The score displayed as a superscript next to each food name is mapped
-          from 1 to 100, indicating how closely it matches your nutrient targets
-          (higher = better).
-        </p>
+        <div className="alert alert-soft shadow-lg mb-6">
+          <Info className="w-6 h-6 mr-2 flex-shrink-0" />
+          <div className="space-y-1 text-sm text-white">
+            <p>
+              <em>Single‑click</em> to select or deselect items — choose at
+              least <em>7 foods</em>.
+            </p>
+            <p>
+              <em>Double‑click</em> any card to open the full nutrient
+              breakdown.
+            </p>
+            <p>
+              The superscript <em>score (1–100)</em> shows how closely each food
+              matches your targets (<em>higher = better</em>).
+            </p>
+          </div>
+        </div>
 
         {/* Food Cards Section per Category */}
         {categories.map((category) => {
@@ -353,8 +364,7 @@ function Recommendations() {
                   {selectedFoodModal.total_free_sugars_g} g
                 </div>
                 <div>
-                  <strong>Fiber:</strong>{" "}
-                  {selectedFoodModal.dietary_fibre_g} g
+                  <strong>Fiber:</strong> {selectedFoodModal.dietary_fibre_g} g
                 </div>
                 <div>
                   <strong>Sat. Fat:</strong>{" "}
@@ -368,7 +378,8 @@ function Recommendations() {
                   <strong>Sodium:</strong> {selectedFoodModal.sodium_mg} mg
                 </div>
                 <div>
-                  <strong>Potassium:</strong> {selectedFoodModal.potassium_mg} mg
+                  <strong>Potassium:</strong> {selectedFoodModal.potassium_mg}{" "}
+                  mg
                 </div>
                 <div>
                   <strong>Linoleic:</strong> {selectedFoodModal.linoleic_mg} mg
@@ -450,18 +461,20 @@ function Recommendations() {
                   <strong>Iron:</strong> {selectedFoodModal.iron_mg} mg
                 </div>
                 <div>
-                  <strong>Magnesium:</strong> {selectedFoodModal.magnesium_mg} mg
+                  <strong>Magnesium:</strong> {selectedFoodModal.magnesium_mg}{" "}
+                  mg
                 </div>
                 <div>
-                  <strong>Manganese:</strong> {selectedFoodModal.manganese_mg} mg
+                  <strong>Manganese:</strong> {selectedFoodModal.manganese_mg}{" "}
+                  mg
                 </div>
                 <div>
-                  <strong>Molybdenum:</strong>{" "}
-                  {selectedFoodModal.molybdenum_mg} mg
+                  <strong>Molybdenum:</strong> {selectedFoodModal.molybdenum_mg}{" "}
+                  mg
                 </div>
                 <div>
-                  <strong>Phosphorus:</strong>{" "}
-                  {selectedFoodModal.phophorous_mg} mg
+                  <strong>Phosphorus:</strong> {selectedFoodModal.phophorous_mg}{" "}
+                  mg
                 </div>
                 <div>
                   <strong>Selenium:</strong> {selectedFoodModal.selenium_ug} µg

@@ -10,6 +10,7 @@ import {
   ReferenceArea,
   CartesianGrid,
 } from "recharts";
+import { HelpCircle } from "lucide-react";
 import api from "../api";
 
 // Helper to determine BMI category text
@@ -56,7 +57,18 @@ function BMIChart({ height }) {
 
   return (
     <div className="card bg-base-100 shadow-xl p-4 w-full h-full">
-      <h2 className="text-xl font-bold mb-2">BMI Trend</h2>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xl font-bold">BMI Trend</h2>
+        <div
+          className="text-lg tooltip tooltip-success tooltip-left"
+          data-tip={
+            "BMI = weight (kg) ÷ (height in m)². " +
+            "After you log a new weight, please refresh the page to see the updated BMI."
+          }
+        >
+          <HelpCircle className="w-5 h-5 text-gray-400 hover:text-gray-200 cursor-pointer" />
+        </div>
+      </div>
       {loading ? (
         <p>Loading BMI data...</p>
       ) : bmiData.length === 0 ? (
