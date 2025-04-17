@@ -357,34 +357,44 @@ class RecommendationView(APIView):
 
 class MealPlanOptimizationView(APIView):
     def post(self, request):
+        # 1) validate goal
+        valid_goals = {"maintain", "lose", "gain"}
+        goal = request.data.get("goal", "maintain")
+        if goal not in valid_goals:
+            return Response(
+                {"error": f"Invalid goal '{goal}'. Valid options are: {', '.join(valid_goals)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         try:
+            # 2) grab profile
             profile = get_object_or_404(HealthProfile, user=request.user)
             age = profile.age
             height_cm = profile.height
             weight_kg = profile.weight
-            goal = request.data.get("goal", "maintain")
-            
-            # Compute daily targets for meal plan.
-            daily_targets = compute_daily_macro_targets(age, height_cm, weight_kg, goal)
-            
-            # Get food_ids from request.
-            food_ids = request.data.get("food_ids", None)
-            
-            # Generate a meal plan using the GA method.
-            plan, targets = generate_meal_plan(food_ids, daily_targets, population_size=50, generations=200, min_portion=20, max_portion=500, min_foods=3)
 
-            
+            # 3) compute targets & plan
+            daily_targets = compute_daily_macro_targets(age, height_cm, weight_kg, goal)
+            food_ids = request.data.get("food_ids", None)
+            plan, targets = generate_meal_plan(
+                food_ids,
+                daily_targets,
+                population_size=50,
+                generations=200,
+                min_portion=20,
+                max_portion=500,
+                min_foods=3
+            )
+
             return Response({
                 "daily_targets": targets,
                 "meal_plan": plan,
             }, status=status.HTTP_200_OK)
+
         except Exception as e:
-            import logging
             logger = logging.getLogger(__name__)
             logger.exception("Daily meal plan optimization failed")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
-
 
 
 class SavedMealPlanView(APIView):
