@@ -7,7 +7,9 @@ class Command(BaseCommand):
     help = "Import FoodTableML.xlsx into FoodItem model."
 
     def handle(self, *args, **options):
-        excel_path = r"E:\vitaForge\dataset\FoodTableML.xlsx"
+        excel_path = os.path.abspath(
+    os.path.join(os.path.dirname(os.getcwd()), "dataset", "FoodTableML.xlsx")
+)
 
         if not os.path.exists(excel_path):
             self.stdout.write(self.style.ERROR(f"File not found: {excel_path}"))

@@ -1,1 +1,14 @@
-Flask==2.2.3
+# musclewiki/requirements.txt  –
+Flask==1.1.4
+Werkzeug==1.0.1
+Jinja2>=2.11,<3.1
+MarkupSafe<2.1
+itsdangerous<2.1
+
+# runtime helpers
+requests>=2.31,<3.0
+
+
+## PowerShell’s default security policy (Restricted) refuses to run any local scripts, so you get:
+#npm.ps1 cannot be loaded because running scripts is disabled on this system
+##Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
