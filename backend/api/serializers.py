@@ -20,7 +20,6 @@ class UserSerializer(serializers.ModelSerializer):
         email = validated_data.pop("email")
         validated_data["username"] = email
         validated_data["email"] = email  # <--- Ensure email gets saved!
-        print(validated_data)
         user = User.objects.create_user(**validated_data)
         return user
 

@@ -1,7 +1,7 @@
 // src/pages/EditProfile.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query"; // <-- Import
+import { useQueryClient } from "@tanstack/react-query";
 import api from "../api";
 
 function EditProfile() {
@@ -10,10 +10,8 @@ function EditProfile() {
   const [healthConditions, setHealthConditions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // We’ll use this to invalidate the "healthProfile" query after saving
   const queryClient = useQueryClient();
 
-  // Fetch current profile details on mount
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -35,7 +33,6 @@ function EditProfile() {
         setLoading(false);
       }
     };
-
     fetchProfile();
   }, []);
 
@@ -48,9 +45,7 @@ function EditProfile() {
       } else {
         let updated = current.filter((cond) => cond !== "none");
         if (checked) {
-          if (!updated.includes(value)) {
-            updated.push(value);
-          }
+          if (!updated.includes(value)) updated.push(value);
         } else {
           updated = updated.filter((cond) => cond !== value);
         }
@@ -60,9 +55,14 @@ function EditProfile() {
   };
 
   const handleSubmit = async (e) => {
+    // 1) let browser perform HTML5 validation
+    if (!e.currentTarget.checkValidity()) {
+      e.currentTarget.reportValidity();
+      return;
+    }
+    // 2) only prevent default once valid
     e.preventDefault();
 
-    // Convert the health conditions array to a comma-separated string
     const payload = {
       dietary_preference: dietaryPreference,
       health_conditions: Array.isArray(healthConditions)
@@ -73,10 +73,7 @@ function EditProfile() {
     try {
       await api.patch("/api/health-profile/detail/", payload);
       alert("Profile updated successfully");
-
-      // Invalidate the local "healthProfile" cache so it re-fetches fresh data next time
       queryClient.invalidateQueries(["healthProfile"]);
-
       navigate("/profile");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -123,66 +120,20 @@ function EditProfile() {
                 <span className="label-text">Health Conditions</span>
               </label>
               <div className="space-y-2">
-                <label className="cursor-pointer label flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    value="diabetes"
-                    className="checkbox checkbox-primary"
-                    checked={healthConditions.includes("diabetes")}
-                    onChange={handleCheckboxChange}
-                  />
-                  <span>Diabetes (Type 1 & 2)</span>
-                </label>
-                <label className="cursor-pointer label flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    value="hypertension"
-                    className="checkbox checkbox-primary"
-                    checked={healthConditions.includes("hypertension")}
-                    onChange={handleCheckboxChange}
-                  />
-                  <span>Hypertension</span>
-                </label>
-                <label className="cursor-pointer label flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    value="heart_disease"
-                    className="checkbox checkbox-primary"
-                    checked={healthConditions.includes("heart_disease")}
-                    onChange={handleCheckboxChange}
-                  />
-                  <span>Heart Disease</span>
-                </label>
-                <label className="cursor-pointer label flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    value="high_cholesterol"
-                    className="checkbox checkbox-primary"
-                    checked={healthConditions.includes("high_cholesterol")}
-                    onChange={handleCheckboxChange}
-                  />
-                  <span>High Cholesterol</span>
-                </label>
-                <label className="cursor-pointer label flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    value="arthritis"
-                    className="checkbox checkbox-primary"
-                    checked={healthConditions.includes("arthritis")}
-                    onChange={handleCheckboxChange}
-                  />
-                  <span>Arthritis</span>
-                </label>
-                <label className="cursor-pointer label flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    value="none"
-                    className="checkbox checkbox-secondary"
-                    checked={healthConditions.includes("none")}
-                    onChange={handleCheckboxChange}
-                  />
-                  <span>None</span>
-                </label>
+                {["diabetes","hypertension","heart_disease","high_cholesterol","arthritis","none"].map((cond) => (
+                  <label key={cond} className="cursor-pointer label flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      value={cond}
+                      className={`checkbox ${cond==="none"?"checkbox-secondary":"checkbox-primary"}`}
+                      checked={healthConditions.includes(cond)}
+                      onChange={handleCheckboxChange}
+                    />
+                    <span>
+                      {cond === "none" ? "None" : cond.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}
+                    </span>
+                  </label>
+                ))}
               </div>
             </div>
 

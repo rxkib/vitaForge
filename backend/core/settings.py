@@ -132,20 +132,21 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
+  'version': 1,
+  'disable_existing_loggers': False,
+  'handlers': { 'console': { 'class': 'logging.StreamHandler' } },
+  'loggers': {
+    'django': {
+      'handlers': ['console'],
+      'level': 'INFO',
     },
-    'loggers': {
-        '': {  # root logger
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
+    '': {
+      'handlers': ['console'],
+      'level': 'WARNING',
     },
+  },
 }
+
 
 
 

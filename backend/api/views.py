@@ -58,7 +58,7 @@ class UserMeView(APIView):
     def delete(self, request):
         user = request.user
         user.delete()
-        return Response({"message": "User account deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CreateUserView(generics.CreateAPIView):
