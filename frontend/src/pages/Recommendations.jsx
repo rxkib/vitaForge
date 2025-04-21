@@ -32,6 +32,7 @@ function Recommendations() {
   const region = queryParams.get("region") || "";
   const condition = queryParams.get("condition") || "";
   const navigate = useNavigate();
+  const [isPreparing, setIsPreparing] = useState(false);
 
   // Fetch recommendations
   const {
@@ -129,6 +130,7 @@ function Recommendations() {
 
   // "Create Meals" for the selected foods
   const handleCreateMeals = async () => {
+    setIsPreparing(true);
     try {
       const foodIds = selectedFoods.map((food) => food.food_id);
       const meals_per_day = 3;
@@ -141,6 +143,7 @@ function Recommendations() {
       navigate("/meal-plan-results", { state: response.data });
     } catch (error) {
       console.error("Error in ML Preprocessing:", error);
+      setIsPreparing(false);
     }
   };
 
@@ -313,13 +316,20 @@ function Recommendations() {
           <button
             className={`btn text-xl px-16 py-6 transition-transform duration-300 transform hover:scale-105 ${
               selectedFoods.length >= 7
-                ? "bg-gradient-to-r from-green-500 to-blue-800 opacity-100 cursor-pointer"
+                ? "bg-gradient-to-r from-green-400 to-blue-800 opacity-100 cursor-pointer"
                 : "bg-gray-400 opacity-50 cursor-not-allowed"
             }`}
-            disabled={selectedFoods.length < 7}
+            disabled={selectedFoods.length < 7 || isPreparing}
             onClick={handleCreateMeals}
           >
-            Create Meals
+            {isPreparing ? (
+              <>
+                <span className="loading loading-spinner loading-sm mr-2"></span>
+                Preparing Your Plan…
+              </>
+            ) : (
+              "Create Meals"
+            )}
           </button>
         </div>
       </div>
