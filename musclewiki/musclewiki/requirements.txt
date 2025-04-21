@@ -7,8 +7,3 @@ itsdangerous<2.1
 
 # runtime helpers
 requests>=2.31,<3.0
-
-
-## PowerShell’s default security policy (Restricted) refuses to run any local scripts, so you get:
-#npm.ps1 cannot be loaded because running scripts is disabled on this system
-##Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force

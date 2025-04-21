@@ -46,19 +46,23 @@ from .constraints import (
 
 class UserMeView(APIView):
     permission_classes = [IsAuthenticated]
+
     def get(self, request):
         user = request.user
         return Response({
             "username": user.username,
             "email": user.email,
             "is_staff": user.is_staff,
-            "is_superuser": user.is_superuser,  
+            "is_superuser": user.is_superuser,
         })
 
     def delete(self, request):
         user = request.user
         user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"message": "User account deleted successfully."},
+            status=status.HTTP_204_NO_CONTENT
+        )
 
 
 class CreateUserView(generics.CreateAPIView):

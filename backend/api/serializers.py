@@ -11,17 +11,22 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        # We'll accept "email" from the frontend and then set it as "username" and "email" in the database.
         fields = ["id", "email", "password"]
         extra_kwargs = {"password": {"write_only": True}}
 
+    def validate_email(self, value):
+        # since we store email in username, check username uniqueness
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError(
+                "This email is already registered, please login or try a different email"
+            )
+        return value
+
     def create(self, validated_data):
-        # Pop the email field and use it as both username and email.
         email = validated_data.pop("email")
         validated_data["username"] = email
-        validated_data["email"] = email  # <--- Ensure email gets saved!
-        user = User.objects.create_user(**validated_data)
-        return user
+        validated_data["email"] = email
+        return User.objects.create_user(**validated_data)
 
 class HealthProfileSerializer(serializers.ModelSerializer):
     class Meta:

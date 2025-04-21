@@ -1,15 +1,18 @@
-// src/pages/MultiStepRegistration.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import BasicInfo from "../components/registration/BasicInfo";
 import PersonalDetails from "../components/registration/PersonalDetails";
 import DietaryPreference from "../components/registration/DietaryPreference";
 import HealthConditions from "../components/registration/HealthConditions";
+
 import api from "../api";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 
-function MultiStepRegistration() {
+export default function MultiStepRegistration() {
   const [step, setStep] = useState(1);
+  const [regErrors, setRegErrors] = useState({}); // ← track backend field errors
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -21,24 +24,23 @@ function MultiStepRegistration() {
   });
   const navigate = useNavigate();
 
-  const nextStep = () => setStep((prev) => prev + 1);
-  const prevStep = () => setStep((prev) => prev - 1);
+  const nextStep = () => setStep((p) => p + 1);
+  const prevStep = () => setStep((p) => p - 1);
   const updateFormData = (newData) =>
-    setFormData((prev) => ({ ...prev, ...newData }));
+    setFormData((p) => ({ ...p, ...newData }));
 
   const handleSubmit = async (selectedHealthConditions) => {
-    // Use the selectedHealthConditions passed from HealthConditions component.
     const finalHealthConditions =
       selectedHealthConditions || formData.healthConditions;
+
     try {
-      // Register the user
-      const userRes = await api.post("/api/user/register/", {
+      // 1) Create user
+      await api.post("/api/user/register/", {
         email: formData.email,
         password: formData.password,
       });
-      console.log("User registered:", userRes.data);
 
-      // Log the user in to get tokens
+      // 2) Immediately log in
       const loginRes = await api.post("/api/token/", {
         username: formData.email,
         password: formData.password,
@@ -46,30 +48,34 @@ function MultiStepRegistration() {
       localStorage.setItem(ACCESS_TOKEN, loginRes.data.access);
       localStorage.setItem(REFRESH_TOKEN, loginRes.data.refresh);
 
-      // Create the Health Profile
+      // 3) Create health profile
       await api.post("/api/health-profile/", {
         age: Number(formData.age),
         height: Number(formData.height),
         weight: Number(formData.weight),
         dietary_preference: formData.dietaryPreference,
-        // Convert the array to a comma-separated string
         health_conditions: Array.isArray(finalHealthConditions)
           ? finalHealthConditions.join(", ")
           : finalHealthConditions,
       });
 
-      // Redirect to Home page
+      // 4) Success!
       navigate("/");
     } catch (error) {
-      console.error("Registration error:", error);
-      alert(
-        "Registration failed: " +
-          (error.response?.data?.detail || error.message)
-      );
+      // Handle duplicate‑email: DRF returns 400 + { email: ["…"] }
+      if (error.response?.status === 400 && error.response.data.email) {
+        setRegErrors(error.response.data);
+        setStep(1);
+      } else {
+        console.error("Registration error:", error);
+        alert(
+          "Registration failed: " +
+            (error.response?.data?.detail || error.message)
+        );
+      }
     }
   };
 
-  // Render the current step component
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -78,6 +84,8 @@ function MultiStepRegistration() {
             formData={formData}
             updateFormData={updateFormData}
             nextStep={nextStep}
+            regErrors={regErrors}
+            clearErrors={() => setRegErrors({})}
           />
         );
       case 2:
@@ -113,14 +121,12 @@ function MultiStepRegistration() {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-base-200 flex items-center justify-center p-4">
       <div className="card w-full max-w-2xl bg-base-100 shadow-xl">
         <div className="card-body">
           <h2 className="text-3xl font-bold text-center mb-6">
             Register for Fitness App
           </h2>
-
-          {/* Steps indicator */}
           <ul className="steps mb-6">
             <li className={`step ${step >= 1 ? "step-primary" : ""}`}>
               Account
@@ -133,12 +139,9 @@ function MultiStepRegistration() {
               Health
             </li>
           </ul>
-
           {renderStep()}
         </div>
       </div>
     </div>
   );
 }
-
-export default MultiStepRegistration;
