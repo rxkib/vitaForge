@@ -55,7 +55,9 @@ describe("Settings Component", () => {
     await waitFor(() => {
       expect(screen.getByText(/account settings/i)).toBeInTheDocument();
       expect(screen.getAllByText(/delete account/i).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/delete meal plan/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/delete meal plan/i).length).toBeGreaterThan(
+        0
+      );
       expect(screen.getByText(/data & privacy/i)).toBeInTheDocument();
       expect(screen.getByText(/about/i)).toBeInTheDocument();
       expect(screen.getByText(/help & feedback/i)).toBeInTheDocument();
@@ -90,6 +92,7 @@ describe("Settings Component", () => {
 
   test("deletes account and navigates to login page", async () => {
     mockedApi.delete.mockResolvedValueOnce({});
+
     render(
       <AuthContext.Provider value={{ authState: dummyAuthState }}>
         <MemoryRouter>
@@ -97,20 +100,29 @@ describe("Settings Component", () => {
         </MemoryRouter>
       </AuthContext.Provider>
     );
-    const deleteAccountButton = screen.getByRole("button", { name: /delete account/i });
+
+    // Open the modal
+    const deleteAccountButton = screen.getByRole("button", {
+      name: /delete account/i,
+    });
     await userEvent.click(deleteAccountButton);
 
-    expect(window.confirm).toHaveBeenCalled();
+    // Confirm deletion via modal button
+    const confirmDeleteButton = await screen.findByRole("button", {
+      name: /absolutely, delete/i,
+    });
+    await userEvent.click(confirmDeleteButton);
+
+    // Assert API call and navigation
     await waitFor(() => {
       expect(mockedApi.delete).toHaveBeenCalledWith("/api/user/me/");
-    });
-    await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/login");
     });
   });
 
   test("deletes meal plan successfully", async () => {
     mockedApi.delete.mockResolvedValueOnce({});
+
     render(
       <AuthContext.Provider value={{ authState: dummyAuthState }}>
         <MemoryRouter>
@@ -118,10 +130,20 @@ describe("Settings Component", () => {
         </MemoryRouter>
       </AuthContext.Provider>
     );
-    const deleteMealPlanButton = screen.getByRole("button", { name: /delete meal plan/i });
+
+    // Open the modal
+    const deleteMealPlanButton = screen.getByRole("button", {
+      name: /delete meal plan/i,
+    });
     await userEvent.click(deleteMealPlanButton);
 
-    expect(window.confirm).toHaveBeenCalled();
+    // Confirm deletion via modal
+    const confirmDeleteMealBtn = await screen.findByRole("button", {
+      name: /yes, delete plan/i,
+    });
+    await userEvent.click(confirmDeleteMealBtn);
+
+    // Assert API call
     await waitFor(() => {
       expect(mockedApi.delete).toHaveBeenCalledWith("/api/meal-plan/");
     });

@@ -60,20 +60,27 @@ function Home() {
       <br />
       {/* Main Content */}
       <div className="container mx-auto p-20 text-center">
-        <h2 className="text-5xl font-bold mb-4">Welcome Back!</h2>
-        <p className="mb-6">
-          Your personalized fitness journey starts here.
+        <div className="text-center py-12 px-4">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-3">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-200 to-blue-500">
+              Welcome Back!
+            </span>
+          </h1>
           <br />
-          Check your progress, explore tailored workout plans, and manage your
-          profile.
-        </p>
-        <div className="flex justify-center gap-4 mb-4">
-          <Link to="/plans" className="btn btn-primary">
-            View Plans
-          </Link>
-          <Link to="/profile" className="btn btn-secondary">
-            View Profile
-          </Link>
+          <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto mb-8">
+            Your personalized fitness journey starts here.
+            <br />
+            Track your progress, explore meal plans and exercises, and manage
+            your profile, all from one convenient dashboard!
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Link to="/plans" className="btn btn-lg btn-primary">
+              View Plans
+            </Link>
+            <Link to="/profile" className="btn btn-lg btn-secondary">
+              View Profile
+            </Link>
+          </div>
         </div>
 
         {/* Full-width divider */}
@@ -88,7 +95,8 @@ function Home() {
             {profile && <BMIChart height={profile.height} />}
           </div>
         </div>
-
+        <br />
+        <br />
         {/* Full-width divider */}
         <div className="divider w-full my-8"></div>
 

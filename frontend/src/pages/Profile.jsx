@@ -92,9 +92,8 @@ function Profile() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="card-title text-3xl font-bold">My Profile</h2>
-                <p className="text-sm text-gray-500">
-                  Welcome, {userIdentifier}
-                </p>
+                <br />
+                <p className="text-lg text-white">Welcome, {userIdentifier}</p>
               </div>
               <div className="avatar">
                 <div className="w-20 rounded-full">

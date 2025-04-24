@@ -190,8 +190,9 @@ global.ResizeObserver = class {
   
       // Verify registration page heading.
       expect(
-        screen.getByRole("heading", { name: /register for fitness app/i })
+        screen.getByRole("heading", { name: "Create Your Free vitaForge Account" })
       ).toBeInTheDocument();
+      
   
       // Step 1: BasicInfo.
       const emailInput = screen.getByPlaceholderText(/enter your email/i);

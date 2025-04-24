@@ -57,10 +57,10 @@ function BMIChart({ height }) {
 
   return (
     <div className="card bg-base-100 shadow-xl p-4 w-full h-full">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-center mb-2">
         <h2 className="text-xl font-bold">BMI Trend</h2>
         <div
-          className="text-lg tooltip tooltip-success tooltip-left"
+          className="text-lg tooltip tooltip-success tooltip-top relative left-1"
           data-tip={
             "BMI = weight (kg) ÷ (height in m)². " +
             "After you log a new weight, please refresh the page to see the updated BMI."

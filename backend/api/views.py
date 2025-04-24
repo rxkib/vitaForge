@@ -383,7 +383,7 @@ class MealPlanOptimizationView(APIView):
             plan, targets = generate_meal_plan(
                 food_ids,
                 daily_targets,
-                population_size=50,
+                population_size=100,
                 generations=200,
                 min_portion=20,
                 max_portion=500,

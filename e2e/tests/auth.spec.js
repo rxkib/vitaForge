@@ -13,7 +13,7 @@ test.describe("User Registration, Login, and Authenticated Access", () => {
     // === Registration Flow ===
     await page.goto(`${frontendURL}/register`);
     await expect(
-      page.getByRole("heading", { name: "Register for Fitness App" })
+      page.getByRole("heading", { name: /create your free.*account/i })
     ).toBeVisible();
 
     // Step 1: Basic Info

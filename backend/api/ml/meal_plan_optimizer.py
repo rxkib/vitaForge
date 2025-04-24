@@ -5,6 +5,7 @@ from api.ml.data_preprocessing import scale_nutritional_data, get_food_macro_dat
 from api.ml.ga_optimizer import genetic_algorithm_meal_plan
 from .optimization import compute_daily_macro_targets
 
+
 def compute_recommended_max(categories, names):
     # Define mapping as (list of keywords, recommended max serving)
     mapping = [
@@ -14,7 +15,7 @@ def compute_recommended_max(categories, names):
         (["legume", "poultry", "offal", "egg", "fish", "paneer", "milk", "red meat"], 250),
         (["peanut butter"], 5),
         (["oil", "condiment", "confectionery", "sweetener", "butter"], 10),
-        (["coffee"], 10),
+        (["coffee"], 2),
         (["nut", "peanut", "seed"], 30),
         (["dried fruit"], 20),
         (["coconut water"], 300),

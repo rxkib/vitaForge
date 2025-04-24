@@ -123,10 +123,15 @@ export default function MultiStepRegistration() {
   return (
     <div className="min-h-screen bg-base-200 flex items-center justify-center p-4">
       <div className="card w-full max-w-2xl bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h2 className="text-3xl font-bold text-center mb-6">
-            Register for Fitness App
-          </h2>
+        <div className="card-body p-8">
+          <h1 className="text-4xl sm:text-3xl md:text-2xl font-extrabold text-center mb-2">
+            Create Your Free{" "}
+            <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+              vitaForge
+            </span>{" "}
+            Account
+          </h1>
+          <br />
           <ul className="steps mb-6">
             <li className={`step ${step >= 1 ? "step-primary" : ""}`}>
               Account

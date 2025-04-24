@@ -8,23 +8,7 @@ import { AuthContext } from '../context/AuthContext';
 import { vi } from 'vitest';
 import api from '../api';
 
-// Dummy API responses for admin dashboard.
-const dummyUsers = {
-  users: [
-    { id: 1, username: 'john_doe', is_staff: false },
-    { id: 2, username: 'admin_user', is_staff: true },
-  ],
-};
-const dummyMealPlans = [
-  { id: 101, user_id: 1, created_at: new Date().toISOString() },
-];
-const dummyFeedbacks = {
-  feedbacks: [
-    { id: 201, user: 'john_doe', message: 'Great app!', created_at: '2020-01-01', replies: [] },
-  ],
-};
-
-// Partially mock the API module so that it returns a default export.
+// Mock the API module
 vi.mock('../api', () => ({
   default: {
     get: vi.fn(),
@@ -33,17 +17,22 @@ vi.mock('../api', () => ({
 }));
 import mockedApi from '../api';
 
-// Override window.alert and window.confirm.
-window.alert = vi.fn();
-window.confirm = vi.fn(() => true);
-
 describe('AdminDashboard Component', () => {
+  const dummyUsers = { users: [
+    { id: 1, username: 'john_doe', is_staff: false },
+    { id: 2, username: 'admin_user', is_staff: true },
+  ]};
+  const dummyMealPlans = [
+    { id: 101, user_id: 1, created_at: new Date().toISOString(), plan: {} },
+  ];
+  const dummyFeedbacks = { feedbacks: [] };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  test('renders admin dashboard with user, meal plan, and feedback data', async () => {
-    // Set up API responses.
+  test('renders admin dashboard with users, meal plans, and feedback sections', async () => {
+    // Stub GET endpoints
     mockedApi.get.mockImplementation((url) => {
       if (url === '/api/admin-dashboard/') {
         return Promise.resolve({ data: dummyUsers });
@@ -58,32 +47,33 @@ describe('AdminDashboard Component', () => {
     });
 
     render(
-      <AuthContext.Provider value={{ authState: { user: { username: 'testUser' } } }}>
+      <AuthContext.Provider value={{
+        authState: { isAuthenticated: true, loading: false, user: { is_staff: true } },
+      }}>
         <MemoryRouter>
           <AdminDashboard />
         </MemoryRouter>
       </AuthContext.Provider>
     );
 
-    // Wait until the dashboard loads; use a flexible matcher for "admin dashboard".
-    await waitFor(() => {
-      expect(screen.getByText((content) => content.toLowerCase().includes('admin dashboard'))).toBeInTheDocument();
-    });
+    // Wait for the dashboard title
+    await waitFor(() =>
+      expect(
+        screen.getByText((t) => t.toLowerCase().includes('admin dashboard'))
+      ).toBeInTheDocument()
+    );
 
-    // Instead of getByText (which fails if there are duplicates), use getAllByText for "john_doe".
-    const johnDoeElements = screen.getAllByText('john_doe');
-    expect(johnDoeElements.length).toBeGreaterThan(0);
+    // Both users should appear
+    expect(screen.getByText('john_doe')).toBeInTheDocument();
+    expect(screen.getByText('admin_user')).toBeInTheDocument();
 
-    // Check for admin_user as well.
-    const adminUserElements = screen.getAllByText('admin_user');
-    expect(adminUserElements.length).toBeGreaterThan(0);
-
-    // Verify that the meal plans and feedback sections are rendered.
+    // Sections for meal plans and feedback
     expect(screen.getByText(/saved meal plans/i)).toBeInTheDocument();
     expect(screen.getByText(/user feedback/i)).toBeInTheDocument();
   });
 
-  test('deletes a non-admin user when Delete is clicked', async () => {
+  test('deletes a non-admin user via the modal and shows success banner', async () => {
+    // Stub GET endpoints
     mockedApi.get.mockImplementation((url) => {
       if (url === '/api/admin-dashboard/') {
         return Promise.resolve({ data: dummyUsers });
@@ -96,31 +86,43 @@ describe('AdminDashboard Component', () => {
       }
       return Promise.reject(new Error('Unknown endpoint'));
     });
+    // Stub DELETE call
     mockedApi.delete.mockResolvedValue({});
 
     render(
-      <AuthContext.Provider value={{ authState: { user: { username: 'testUser' } } }}>
+      <AuthContext.Provider value={{
+        authState: { isAuthenticated: true, loading: false, user: { is_staff: true } },
+      }}>
         <MemoryRouter>
           <AdminDashboard />
         </MemoryRouter>
       </AuthContext.Provider>
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('john_doe')).toBeInTheDocument();
-    });
+    // Wait for john_doe to show up
+    await waitFor(() => expect(screen.getByText('john_doe')).toBeInTheDocument());
 
-    // Find the Delete button for john_doe (non-admin).
-    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
-    const deleteButtonForJohn = deleteButtons.find((btn) => !btn.disabled);
-    expect(deleteButtonForJohn).toBeDefined();
+    // Click the active "Delete" button (john_doe)
+    const deleteButtons = screen.getAllByRole('button', { name: /^delete$/i });
+    const johnDelete = deleteButtons.find((btn) => !btn.disabled);
+    await userEvent.click(johnDelete);
 
-    await userEvent.click(deleteButtonForJohn);
+    // The custom modal should open
+    expect(screen.getByText(/delete user john_doe\?/i)).toBeInTheDocument();
 
-    expect(window.confirm).toHaveBeenCalled();
+    // Confirm deletion in the modal
+    const confirmBtn = screen.getByRole('button', { name: /yes, delete/i });
+    await userEvent.click(confirmBtn);
+
+    // API call should be made with the correct URL
     await waitFor(() => {
       expect(mockedApi.delete).toHaveBeenCalledWith('/api/admin/delete-user/1/');
     });
-    expect(window.alert).toHaveBeenCalledWith('User deleted successfully.');
+
+    // Success banner appears
+    expect(screen.getByText(/user deleted successfully\./i)).toBeInTheDocument();
+
+    // And john_doe is removed from the table
+    expect(screen.queryByText('john_doe')).not.toBeInTheDocument();
   });
 });
